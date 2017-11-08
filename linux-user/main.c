@@ -36,6 +36,7 @@
 
 char *exec_path;
 
+int guest_ins_count;
 int singlestep;
 const char *filename;
 const char *argv0;
@@ -314,6 +315,7 @@ void cpu_loop(CPUX86State *env)
 #endif
         case EXCP0B_NOSEG:
         case EXCP0C_STACK:
+            fprintf(stderr, "Exception NOSEG / STACK\n");
             info.si_signo = SIGBUS;
             info.si_errno = 0;
             info.si_code = TARGET_SI_KERNEL;
@@ -321,6 +323,7 @@ void cpu_loop(CPUX86State *env)
             queue_signal(env, info.si_signo, &info);
             break;
         case EXCP0D_GPF:
+            fprintf(stderr, "EXCP0D_GPF\n");
             /* XXX: potential problem if ABI32 */
 #ifndef TARGET_X86_64
             if (env->eflags & VM_MASK) {
@@ -328,6 +331,7 @@ void cpu_loop(CPUX86State *env)
             } else
 #endif
             {
+                fprintf(stderr, "SIGSEGV\n");
                 info.si_signo = SIGSEGV;
                 info.si_errno = 0;
                 info.si_code = TARGET_SI_KERNEL;
@@ -336,12 +340,16 @@ void cpu_loop(CPUX86State *env)
             }
             break;
         case EXCP0E_PAGE:
+            fprintf(stderr, "POE_PAGE\n");
             info.si_signo = SIGSEGV;
             info.si_errno = 0;
-            if (!(env->error_code & 1))
+            if (!(env->error_code & 1)) { 
+		fprintf(stderr, "MAPERR\n");
                 info.si_code = TARGET_SEGV_MAPERR;
-            else
+	    }  else {
+		fprintf(stderr, "ACCERR");
                 info.si_code = TARGET_SEGV_ACCERR;
+	    }
             info._sifields._sigfault._addr = env->cr[2];
             queue_signal(env, info.si_signo, &info);
             break;
@@ -352,6 +360,7 @@ void cpu_loop(CPUX86State *env)
             } else
 #endif
             {
+                fprintf(stderr, "SIGFPE\n");
                 /* division by zero */
                 info.si_signo = SIGFPE;
                 info.si_errno = 0;
@@ -363,6 +372,7 @@ void cpu_loop(CPUX86State *env)
         case EXCP01_DB:
         case EXCP03_INT3:
 #ifndef TARGET_X86_64
+            fprintf(stderr, "INT3\n");
             if (env->eflags & VM_MASK) {
                 handle_vm86_trap(env, trapnr);
             } else
@@ -382,6 +392,7 @@ void cpu_loop(CPUX86State *env)
             break;
         case EXCP04_INTO:
         case EXCP05_BOUND:
+             fprintf(stderr, "INTO/BOUND Exception\n");
 #ifndef TARGET_X86_64
             if (env->eflags & VM_MASK) {
                 handle_vm86_trap(env, trapnr);
@@ -403,10 +414,18 @@ void cpu_loop(CPUX86State *env)
             queue_signal(env, info.si_signo, &info);
             break;
         case EXCP_INTERRUPT:
+            fprintf(stderr, "Interrupt generated\n");
+            sigset_t signal_set;
+            sigaddset(&signal_set, SIGPROF);
+
+            /* now signal_set == {SIGSEGV, SIGRTMIN} */
+            sigprocmask(SIG_BLOCK, &signal_set, NULL); 
+
             /* just indicate that signals should be handled asap */
             break;
         case EXCP_DEBUG:
             {
+                fprintf(stderr, "DEBUG\n");  
                 int sig;
 
                 sig = gdb_handlesig(cs, TARGET_SIGTRAP);
@@ -3631,6 +3650,11 @@ static void handle_arg_version(const char *arg)
     exit(0);
 }
 
+static void handle_arg_icount(const char *arg)
+{
+    guest_ins_count = 1;
+}
+
 struct qemu_argument {
     const char *argv;
     const char *env;
@@ -3665,6 +3689,8 @@ static const struct qemu_argument arg_table[] = {
     {"R",          "QEMU_RESERVED_VA", true,  handle_arg_reserved_va,
      "size",       "reserve 'size' bytes for guest virtual address space"},
 #endif
+    {"i",	   "",		       false, handle_arg_icount,
+     "",	   "count the number of executed guest instructions"},
     {"d",          "QEMU_LOG",         true,  handle_arg_log,
      "item[,...]", "enable logging of specified items "
      "(use '-d help' for a list of items)"},

@@ -77,6 +77,7 @@ all: $(PROGS) stap
 # cpu emulator library
 obj-y = exec.o translate-all.o cpu-exec.o
 obj-y += tcg/tcg.o tcg/optimize.o
+obj-y += tcg/tcg-plugin.o
 obj-$(CONFIG_TCG_INTERPRETER) += tci.o
 obj-$(CONFIG_TCG_INTERPRETER) += disas/tci.o
 obj-y += fpu/softfloat.o
@@ -90,6 +91,14 @@ obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/decNumber.o
 obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/dpd/decimal32.o
 obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/dpd/decimal64.o
 obj-$(CONFIG_LIBDECNUMBER) += libdecnumber/dpd/decimal128.o
+
+# added for polarssl
+obj-y += polarssl/entropy.o polarssl/bignum.o polarssl/md.o \
+         polarssl/oid.o polarssl/asn1parse.o polarssl/sha1.o \
+         polarssl/sha512.o polarssl/aes.o polarssl/entropy_poll.o polarssl/aesni.o \
+         polarssl/timing.o polarssl/md_wrap.o polarssl/sha256.o \
+         polarssl/md5.o polarssl/ripemd160.o polarssl/net.o polarssl/rsa.o \
+         polarssl/ctr_drbg.o polarssl/aes_cmac128.o
 
 #########################################################
 # Linux user emulator target

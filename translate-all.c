@@ -35,6 +35,7 @@
 #include "cpu.h"
 #include "disas/disas.h"
 #include "tcg.h"
+#include "tcg-plugin.h"
 #if defined(CONFIG_USER_ONLY)
 #include "qemu.h"
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
@@ -126,7 +127,7 @@ static void *l1_map[V_L1_SIZE];
 TCGContext tcg_ctx;
 
 static void tb_link_page(TranslationBlock *tb, tb_page_addr_t phys_pc,
-                         tb_page_addr_t phys_page2);
+                         tb_page_addr_t phys_page2, CPUState *cpu);
 static TranslationBlock *tb_find_pc(uintptr_t tc_ptr);
 
 void cpu_gen_init(void)
@@ -156,7 +157,14 @@ int cpu_gen_code(CPUArchState *env, TranslationBlock *tb, int *gen_code_size_ptr
 #endif
     tcg_func_start(s);
 
+
+    if(guest_ins_count == 1) 
+        tcg_plugin_before_gen_tb(ENV_GET_CPU(env), tb);
+
     gen_intermediate_code(env, tb);
+
+    if(guest_ins_count == 1) 
+        tcg_plugin_after_gen_tb(ENV_GET_CPU(env), tb);
 
     /* generate machine code */
     gen_code_buf = tb->tc_ptr;
@@ -1034,7 +1042,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     tb_page_addr_t phys_pc, phys_page2;
     target_ulong virt_page2;
     int code_gen_size;
-
+	
     phys_pc = get_page_addr_code(env, pc);
     tb = tb_alloc(pc);
     if (!tb) {
@@ -1059,7 +1067,7 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
     if ((pc & TARGET_PAGE_MASK) != virt_page2) {
         phys_page2 = get_page_addr_code(env, virt_page2);
     }
-    tb_link_page(tb, phys_pc, phys_page2);
+    tb_link_page(tb, phys_pc, phys_page2, cpu);
     return tb;
 }
 
@@ -1306,7 +1314,7 @@ static void tb_invalidate_phys_page(tb_page_addr_t addr,
 
 /* add the tb in the target page and protect it if necessary */
 static inline void tb_alloc_page(TranslationBlock *tb,
-                                 unsigned int n, tb_page_addr_t page_addr)
+                                 unsigned int n, tb_page_addr_t page_addr, CPUState *cpu)
 {
     PageDesc *p;
 #ifndef CONFIG_USER_ONLY
@@ -1321,6 +1329,13 @@ static inline void tb_alloc_page(TranslationBlock *tb,
 #endif
     p->first_tb = (TranslationBlock *)((uintptr_t)tb | n);
     invalidate_page_bitmap(p);
+ 
+    CPUX86State *env = cpu->env_ptr;
+
+    if((env->cregs.CR_ELRANGE[0] <= page_addr) && ((env->cregs.CR_ELRANGE[0] + env->cregs.CR_ELRANGE[1]) >= page_addr)) {
+       return;
+       //page_already_protected = true;
+    }
 
 #if defined(TARGET_HAS_SMC) || 1
 
@@ -1329,7 +1344,7 @@ static inline void tb_alloc_page(TranslationBlock *tb,
         target_ulong addr;
         PageDesc *p2;
         int prot;
-
+        fprintf(stderr, "Page Faults - Check: %lx\n", page_addr);
         /* force the host page as non writable (writes will have a
            page fault + mprotect overhead) */
         page_addr &= qemu_host_page_mask;
@@ -1366,7 +1381,7 @@ static inline void tb_alloc_page(TranslationBlock *tb,
 /* add a new TB and link it to the physical page tables. phys_page2 is
    (-1) to indicate that only one page contains the TB. */
 static void tb_link_page(TranslationBlock *tb, tb_page_addr_t phys_pc,
-                         tb_page_addr_t phys_page2)
+                         tb_page_addr_t phys_page2, CPUState *cpu)
 {
     unsigned int h;
     TranslationBlock **ptb;
@@ -1381,9 +1396,9 @@ static void tb_link_page(TranslationBlock *tb, tb_page_addr_t phys_pc,
     *ptb = tb;
 
     /* add in the page list */
-    tb_alloc_page(tb, 0, phys_pc & TARGET_PAGE_MASK);
+    tb_alloc_page(tb, 0, phys_pc & TARGET_PAGE_MASK, cpu);
     if (phys_page2 != -1) {
-        tb_alloc_page(tb, 1, phys_page2);
+        tb_alloc_page(tb, 1, phys_page2, cpu);
     } else {
         tb->page_addr[1] = -1;
     }

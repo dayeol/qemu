@@ -112,7 +112,6 @@ static void QEMU_NORETURN raise_interrupt2(CPUX86State *env, int intno,
 }
 
 /* shortcuts to generate exceptions */
-
 void QEMU_NORETURN raise_interrupt(CPUX86State *env, int intno, int is_int,
                                    int error_code, int next_eip_addend)
 {
@@ -122,6 +121,8 @@ void QEMU_NORETURN raise_interrupt(CPUX86State *env, int intno, int is_int,
 void raise_exception_err(CPUX86State *env, int exception_index,
                          int error_code)
 {
+    // TODO : remove this or make it as debug only
+    printf("Debug Raise Exception: RBP: %lx   RSP: %lx EIP: %lx\n", env->regs[R_EBP], env->regs[R_ESP], env->eip);
     raise_interrupt2(env, exception_index, 0, error_code, 0);
 }
 

@@ -551,6 +551,7 @@ typedef uint32_t FeatureWordArray[FEATURE_WORDS];
 #define CPUID_SVM_PFTHRESHOLD  (1U << 12)
 
 #define CPUID_7_0_EBX_FSGSBASE (1U << 0)
+#define CPUID_7_0_EBX_SGX      (1U << 2)
 #define CPUID_7_0_EBX_BMI1     (1U << 3)
 #define CPUID_7_0_EBX_HLE      (1U << 4)
 #define CPUID_7_0_EBX_AVX2     (1U << 5)
@@ -780,6 +781,50 @@ typedef enum TPRAccess {
     TPR_ACCESS_WRITE,
 } TPRAccess;
 
+typedef struct CREGS {
+    /* added for exception handling */
+    bool CR_ENC_INSN_RET;
+    bool CR_EXIT_MODE;
+    volatile uint64_t CR_CURR_EIP;
+    uint64_t CR_EXIT_EIP;
+    uint64_t CR_NEXT_EIP;
+    uint64_t CR_AEP;                    //64 LP -- Added
+    uint64_t CR_ESP;
+    uint64_t CR_EBP;
+
+    /* not in the list of Internal CREGs but used in manual */
+    uint64_t CR_TCS_PA;
+    uint64_t CR_ENCLAVE_ENTRY_IP;
+    SegmentCache CR_SAVE_GS;
+    bool CR_DBGOPTIN;
+    uint8_t CR_REPORT_KEYID[32];  // Refer 5-73
+
+    /* listed in Internal CREGS */
+    bool CR_ENCLAVE_MODE;               // 1 LP
+    uint64_t CR_TCS_LA;                 // 64 LP
+    uint64_t CR_TCS_PH;                 // 64 LP
+    uint64_t CR_ACTIVE_SECS;            // 64 LP
+    uint64_t CR_ELRANGE[2];             // 128 LP
+    bool CR_SAVE_TF;                    // 1 LP
+    SegmentCache CR_SAVE_FS;
+    uint64_t CR_GPR_PA;
+    uint64_t CR_XSAVE_PAGE[64];         // 64 LP
+    uint64_t CR_SAVE_DR7;               // 64 LP
+    uint64_t CR_SAVE_PERF_GLOBAL_CTRL;  // 64 LP
+    uint64_t CR_SAVE_DEBUGCTL;          // 64 LP
+    uint64_t CR_SAVE_PEBS_ENABLE;       // 64 LP
+    uint64_t CR_CPUSVN[2];              // 128 PACKAGE
+    uint64_t CSR_SGX_OWNEREPOCH[2];     // 128 PACKAGE
+    uint8_t CSR_INTELPUBKEYHASH[32];    // 32 PACKAGE
+    uint64_t CR_SAVE_XCR0;              // 64 LP
+    uint64_t CR_SGX_ATTRIBUTES_MASK[2]; // 128 LP
+    uint64_t CR_PAGING_VERSION;         // 64 PACKAGE
+    uint64_t CR_VERSION_THRESHOLD;      // 64 PACKAGE
+    uint64_t CR_NEXT_EID;               // 64 PACKAGE
+    uint64_t CR_BASE_PK;                // 128 PACKAGE
+    uint64_t CR_SEAL_FUSES[2];          // 128 PACKAGE
+} _cregs;
+
 typedef struct CPUX86State {
     /* standard registers */
     target_ulong regs[CPU_NB_REGS];
@@ -806,6 +851,10 @@ typedef struct CPUX86State {
     SegmentCache idt; /* only base and limit are used */
 
     target_ulong cr[5]; /* NOTE: cr1 is unused */
+
+    /* cregs for SGX specific code */
+    _cregs cregs; 	/* CREGs maintained by processor */
+
     int32_t a20_mask;
 
     BNDReg bnd_regs[4];

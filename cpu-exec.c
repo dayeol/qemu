@@ -640,6 +640,39 @@ int cpu_exec(CPUArchState *env)
                     tc_ptr = tb->tc_ptr;
                     /* execute the generated code */
                     next_tb = cpu_tb_exec(cpu, tc_ptr);
+
+// Newly added test code for SGX
+                    /*
+                     * Essentially, we are directing qemu to execute from the eip
+                     * supplied during eenter/eresume. The additional check for
+                     * INSN_RET is to ensure that conditional statements which 
+                     * result in a new tb execution do not cause a re-entry into
+                     * this if statement, since it will reset the EIP to a previous
+                     * state. 
+                     */
+                    if (env->cregs.CR_ENCLAVE_MODE && env->cregs.CR_ENC_INSN_RET) {
+                        /* 
+                         * EIP Supplied during enclave entry/exit(not due to the 
+                         * eexit insn) 
+                         */
+                        env->eip = env->cregs.CR_CURR_EIP;
+                        env->cregs.CR_ENC_INSN_RET = false;
+                    }
+
+                    /*
+                     * Make a jump back to the original state prior to enclave
+                     * execution.
+                     */
+
+                    if (env->cregs.CR_EXIT_MODE) {
+                        /*
+                         * EXIT EIP Supplied with the enclave eenter insn.
+                         */
+                        env->eip = env->cregs.CR_EXIT_EIP;
+                        env->cregs.CR_ENC_INSN_RET = false;
+                        env->cregs.CR_EXIT_MODE = false;
+                    }
+
                     switch (next_tb & TB_EXIT_MASK) {
                     case TB_EXIT_REQUESTED:
                         /* Something asked us to stop executing
