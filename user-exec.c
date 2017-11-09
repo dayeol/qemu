@@ -44,7 +44,7 @@ static void exception_action(CPUState *cpu)
 #if defined(TARGET_I386)
     X86CPU *x86_cpu = X86_CPU(cpu);
     CPUX86State *env1 = &x86_cpu->env;
-
+    printf("Exception Action\n");
     raise_exception_err(env1, cpu->exception_index, env1->error_code);
 #else
     cpu_loop_exit(cpu);
@@ -121,6 +121,7 @@ static inline int handle_cpu_signal(uintptr_t pc, unsigned long address,
     /* we restore the process signal mask as the sigreturn should
        do it (XXX: use sigsetjmp) */
     sigprocmask(SIG_SETMASK, old_set, NULL);
+    printf("user-exec.c Called exception_action\n");
     exception_action(cpu);
 
     /* never comes here */
@@ -230,6 +231,7 @@ int cpu_signal_handler(int host_signum, void *pinfo,
 #endif
 
     pc = PC_sig(uc);
+    printf("CPU_SIGNAL_HANDLER %d\n", host_signum);
     return handle_cpu_signal(pc, (unsigned long)info->si_addr,
                              TRAP_sig(uc) == 0xe ?
                              (ERROR_sig(uc) >> 1) & 1 : 0,

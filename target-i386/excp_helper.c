@@ -106,7 +106,6 @@ static void QEMU_NORETURN raise_interrupt2(CPUX86State *env, int intno,
 }
 
 /* shortcuts to generate exceptions */
-
 void QEMU_NORETURN raise_interrupt(CPUX86State *env, int intno, int is_int,
                                    int error_code, int next_eip_addend)
 {

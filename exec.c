@@ -25,6 +25,7 @@
 #include "qemu/cutils.h"
 #include "cpu.h"
 #include "tcg.h"
+#include "tcg-plugin.h"
 #include "hw/hw.h"
 #if !defined(CONFIG_USER_ONLY)
 #include "hw/boards.h"
@@ -523,7 +524,6 @@ static const VMStateDescription vmstate_cpu_common_crash_occurred = {
         VMSTATE_END_OF_LIST()
     }
 };
-
 const VMStateDescription vmstate_cpu_common = {
     .name = "cpu_common",
     .version_id = 1,
@@ -902,6 +902,7 @@ void cpu_abort(CPUState *cpu, const char *fmt, ...)
 {
     va_list ap;
     va_list ap2;
+    if(guest_ins_count == 1) tcg_plugin_cpus_stopped();
 
     va_start(ap, fmt);
     va_copy(ap2, ap);

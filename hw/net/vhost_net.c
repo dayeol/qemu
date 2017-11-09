@@ -196,6 +196,11 @@ static void vhost_net_set_vq_index(struct vhost_net *net, int vq_index)
     net->dev.vq_index = vq_index;
 }
 
+static void vhost_net_set_vq_index(struct vhost_net *net, int vq_index)
+{
+    net->dev.vq_index = vq_index;
+}
+
 static int vhost_net_start_one(struct vhost_net *net,
                                VirtIODevice *dev)
 {

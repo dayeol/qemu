@@ -16,11 +16,26 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
  */
+//<<<<<<< HEAD
 #include "qemu/osdep.h"
 #include "qapi/error.h"
 #include "qemu/cutils.h"
-
+//=======
+#include "config-host.h"
+#include "config-target.h"
+#include "qemu-common.h"
+#include "tcg-plugin.h"
 #ifdef CONFIG_USER_ONLY
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
+//>>>>>>> 647acc5cc7eca58a813a2da2bdd00e6a321d8ed1
+
+//#ifdef CONFIG_USER_ONLY
 #include "qemu.h"
 #else
 #include "monitor/monitor.h"
@@ -1469,6 +1484,8 @@ void gdb_exit(CPUArchState *env, int code)
   GDBState *s;
   char buf[4];
 
+  if(guest_ins_count == 1) tcg_plugin_cpus_stopped();
+
   s = gdbserver_state;
   if (!s) {
       return;
@@ -1558,6 +1575,8 @@ void gdb_signalled(CPUArchState *env, int sig)
 {
     GDBState *s;
     char buf[4];
+
+    if(guest_ins_count == 1) tcg_plugin_cpus_stopped();
 
     s = gdbserver_state;
     if (gdbserver_fd < 0 || s->fd < 0) {
