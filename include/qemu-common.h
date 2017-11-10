@@ -12,6 +12,8 @@
 #ifndef QEMU_COMMON_H
 #define QEMU_COMMON_H
 
+#include "qemu/osdep.h"
+#include "qemu/typedefs.h"
 #include "qemu/fprintf-fn.h"
 
 #if defined(__arm__) || defined(__sparc__) || defined(__mips__) || defined(__hppa__) || defined(__ia64__)
@@ -34,6 +36,9 @@ extern int64_t max_delay;
 extern int64_t max_advance;
 void dump_drift_info(FILE *f, fprintf_function cpu_fprintf);
 
+extern int guest_ins_count;
+
+#include "qemu/osdep.h"
 #include "qemu/bswap.h"
 
 /* FIXME: Remove NEED_CPU_H.  */
@@ -102,6 +107,10 @@ void cpu_exec_init_all(void);
 
 /* Unblock cpu */
 void qemu_cpu_kick_self(void);
+
+/* Number of fetched instructions per second.  */
+extern uint64_t clock_ifetch;
+uint64_t convert_string_to_frequency(const char *string);
 
 /* work queue */
 struct qemu_work_item {

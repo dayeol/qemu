@@ -1,5 +1,8 @@
+
 DEF_HELPER_FLAGS_4(cc_compute_all, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl, int)
 DEF_HELPER_FLAGS_4(cc_compute_c, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl, int)
+
+DEF_HELPER_FLAGS_4(tcg_plugin_pre_tb, 0, void, i64, i64, i64, i64)
 
 DEF_HELPER_0(lock, void)
 DEF_HELPER_0(unlock, void)
@@ -249,3 +252,17 @@ DEF_HELPER_4(store_callback_pre, void, env, i64, i32, tl)
 DEF_HELPER_4(store_callback_post, void, env, i64, i32, tl)
 DEF_HELPER_0(atomic_callback, void)
 DEF_HELPER_0(qsim_callback, void)
+
+/* SGX Helper Define*/
+DEF_HELPER_1(sgx_encls, void, env)
+DEF_HELPER_2(sgx_enclu, void, env, i64)
+DEF_HELPER_1(sgx_ehandle, void, env)
+DEF_HELPER_1(sgx_trace_pc, void, tl)
+/*RDRAND Helper */
+DEF_HELPER_3(rdrand, void, env, i32, i32)
+
+/* For memory read/write protection */
+DEF_HELPER_3(mem_access, void, env, tl, int)
+
+/* For memory execution protection */
+DEF_HELPER_2(mem_execute, void, env, tl)
