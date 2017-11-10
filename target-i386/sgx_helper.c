@@ -1717,12 +1717,14 @@ void sgx_eenter(CPUX86State *env)
         if (tmp_secs->attributes.xfrm != 0x03) {
         sgx_msg(warn, "Attribute mode64bit mismatched.");
             raise_exception(env, EXCP0D_GPF);
-        } else
+        } 
+				// Should be fixed TODO UCB
+				/*else
              if ((tmp_secs->attributes.xfrm & env->xcr0) ==
                  tmp_secs->attributes.xfrm) {
                  sgx_msg(warn, "secs.attributes.xfrm mismatch");
                  raise_exception(env, EXCP0D_GPF);
-        }
+        }*/
     }
 
     // Make sure the SSA contains at least one more frame
@@ -2786,11 +2788,13 @@ void sgx_eresume(CPUX86State *env)
     if (!(env->cr[4] & CR4_OSXSAVE_MASK)) {
         if (tmp_secs->attributes.xfrm != 0x03) {
             raise_exception(env, EXCP0D_GPF);
-        } else
+        } 
+				//TODO UCB: should be fixed
+				/*else
             if ((tmp_secs->attributes.xfrm & env->xcr0) ==
                    tmp_secs->attributes.xfrm) {
                raise_exception(env, EXCP0D_GPF);
-        }
+        }*/
     }
     // Make sure the SSA contains at least one more frame
 #if DEBUG
