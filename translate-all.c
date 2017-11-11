@@ -1116,14 +1116,8 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
 
     tcg_func_start(&tcg_ctx);
 
-    if(guest_ins_count == 1) 
-        tcg_plugin_before_gen_tb(ENV_GET_CPU(env), tb);
-    
 		gen_intermediate_code(env, tb);
 
-    if(guest_ins_count == 1) 
-        tcg_plugin_after_gen_tb(ENV_GET_CPU(env), tb);
-    
 		trace_translate_block(tb, tb->pc, tb->tc_ptr);
 
     /* generate machine code */

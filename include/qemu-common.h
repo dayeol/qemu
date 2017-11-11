@@ -36,7 +36,6 @@ extern int64_t max_delay;
 extern int64_t max_advance;
 void dump_drift_info(FILE *f, fprintf_function cpu_fprintf);
 
-extern int guest_ins_count;
 
 #include "qemu/osdep.h"
 #include "qemu/bswap.h"

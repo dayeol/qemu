@@ -34,7 +34,6 @@
 
 char *exec_path;
 
-int guest_ins_count;
 int singlestep;
 static const char *filename;
 static const char *argv0;
@@ -3938,11 +3937,6 @@ static void handle_arg_version(const char *arg)
     exit(EXIT_SUCCESS);
 }
 
-static void handle_arg_icount(const char *arg)
-{
-    guest_ins_count = 1;
-}
-
 struct qemu_argument {
     const char *argv;
     const char *env;
@@ -3977,8 +3971,6 @@ static const struct qemu_argument arg_table[] = {
      "address",    "set guest_base address to 'address'"},
     {"R",          "QEMU_RESERVED_VA", true,  handle_arg_reserved_va,
      "size",       "reserve 'size' bytes for guest virtual address space"},
-    {"i",	   "",		       false, handle_arg_icount,
-     "",	   "count the number of executed guest instructions"},
     {"d",          "QEMU_LOG",         true,  handle_arg_log,
      "item[,...]", "enable logging of specified items "
      "(use '-d help' for a list of items)"},

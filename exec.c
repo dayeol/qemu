@@ -935,7 +935,6 @@ void cpu_abort(CPUState *cpu, const char *fmt, ...)
 {
     va_list ap;
     va_list ap2;
-    if(guest_ins_count == 1) tcg_plugin_cpus_stopped();
 
     va_start(ap, fmt);
     va_copy(ap2, ap);
