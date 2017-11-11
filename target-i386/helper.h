@@ -232,6 +232,27 @@ DEF_HELPER_3(rclq, tl, env, tl, tl)
 DEF_HELPER_3(rcrq, tl, env, tl, tl)
 #endif
 
+/* QSim - 0.1
+DEF_HELPER_4(inst_callback, void, env, tl, tl, tl)
+DEF_HELPER_4(reg_read_callback, void, env, ptr, tl, tl)
+DEF_HELPER_4(reg_write_callback, void, env, ptr, tl, tl)
+DEF_HELPER_4(load_callback_pre, void, env, tl, tl, tl)
+DEF_HELPER_4(load_callback_post, void, env, tl, tl, tl)
+DEF_HELPER_4(store_callback_pre, void, env, tl, tl, tl)
+DEF_HELPER_4(store_callback_post, void, env, tl, tl, tl)
+DEF_HELPER_0(atomic_callback, void)
+DEF_HELPER_0(qsim_callback, void)
+*/
+DEF_HELPER_4(inst_callback, void, env, i64, i32, i32)
+DEF_HELPER_3(reg_read_callback, void, env, i32, i32)
+DEF_HELPER_3(reg_write_callback, void, env, i32, i32)
+DEF_HELPER_4(load_callback_pre, void, env, i64, i32, i32)
+DEF_HELPER_4(load_callback_post, void, env, i64, i32, i32)
+DEF_HELPER_4(store_callback_pre, void, env, i64, i32, tl)
+DEF_HELPER_4(store_callback_post, void, env, i64, i32, tl)
+DEF_HELPER_0(atomic_callback, void)
+DEF_HELPER_0(qsim_callback, void)
+
 /* SGX Helper Define*/
 DEF_HELPER_1(sgx_encls, void, env)
 DEF_HELPER_2(sgx_enclu, void, env, i64)

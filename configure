@@ -398,8 +398,8 @@ QEMU_INCLUDES="-I\$(SRC_PATH)/include/openssl $QEMU_INCLUDES"
 LIBS="-lcrypto $LIBS"
 
 if test "$debug_info" = "yes"; then
-    CFLAGS="-g $CFLAGS"
-    LDFLAGS="-g $LDFLAGS"
+    CFLAGS="-ggdb3 $CFLAGS"
+    LDFLAGS="-ggdb3 $LDFLAGS"
 fi
 
 # make source path absolute
@@ -5460,6 +5460,10 @@ echo "CONFIG_TRACE_FILE=$trace_file" >> $config_host_mak
 
 if test "$rdma" = "yes" ; then
   echo "CONFIG_RDMA=y" >> $config_host_mak
+fi
+
+if test "$have_sysmacros" = "yes" ; then
+  echo "CONFIG_SYSMACROS=y" >> $config_host_mak
 fi
 
 # Hold two types of flag:
