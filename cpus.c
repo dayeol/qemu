@@ -1298,7 +1298,6 @@ void pause_all_vcpus(void)
             qemu_cpu_kick(cpu);
         }
     }
-    if(guest_ins_count == 1) tcg_plugin_cpus_stopped();
 }
 
 void cpu_resume(CPUState *cpu)

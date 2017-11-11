@@ -4322,11 +4322,6 @@ int main(int argc, char **argv, char **envp)
         exit(0);
     }
 
-    if (qemu_opts_foreach(qemu_find_opts("object"),
-                          object_create, NULL, 0) != 0) {
-        exit(1);
-    }
-
     machine_opts = qemu_get_machine_opts();
     if (qemu_opt_foreach(machine_opts, machine_set_property, current_machine,
                          NULL)) {
