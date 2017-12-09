@@ -22,6 +22,12 @@
 #include "exec/helper-proto.h"
 #include "exec/cpu_ldst.h"
 #include "exec/address-spaces.h"
+#include "trace.h"
+
+void helper_mark_location(void)
+{
+	trace_mark_location();
+}
 
 void helper_outb(CPUX86State *env, uint32_t port, uint32_t data)
 {

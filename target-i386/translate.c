@@ -7078,7 +7078,7 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
         if(modrm == 0x11)
 				{
 					//UCB: special trace function
-					trace_mark_location();	
+					gen_helper_mark_location();	
 					break;
 				}
 				
