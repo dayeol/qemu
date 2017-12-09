@@ -30,6 +30,7 @@
 #include "trace-tcg.h"
 #include "exec/log.h"
 
+#include "trace.h"
 
 #define PREFIX_REPZ   0x01
 #define PREFIX_REPNZ  0x02
@@ -7074,7 +7075,14 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
 
     case 0x101:
         modrm = cpu_ldub_code(env, s->pc++);
-        switch (modrm) {
+        if(modrm == 0x11)
+				{
+					//UCB: special trace function
+					trace_mark_location();	
+					break;
+				}
+				
+				switch (modrm) {
         CASE_MODRM_MEM_OP(0): /* sgdt */
             gen_svm_check_intercept(s, pc_start, SVM_EXIT_GDTR_READ);
             gen_lea_modrm(env, s, modrm);
@@ -7958,9 +7966,9 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
             break;
 
         case 0xc0 ... 0xc7: /* rdfsbase (f3 0f ae /0) */
-        case 0xc8 ... 0xc8: /* rdgsbase (f3 0f ae /1) */
+        case 0xc8 ... 0xcf: /* rdgsbase (f3 0f ae /1) */
         case 0xd0 ... 0xd7: /* wrfsbase (f3 0f ae /2) */
-        case 0xd8 ... 0xd8: /* wrgsbase (f3 0f ae /3) */
+        case 0xd8 ... 0xdf: /* wrgsbase (f3 0f ae /3) */
             if (CODE64(s)
                 && (prefixes & PREFIX_REPZ)
                 && !(prefixes & PREFIX_LOCK)

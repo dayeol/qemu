@@ -24,6 +24,7 @@
 #include "qemu/timer.h"
 #include "exec/address-spaces.h"
 #include "exec/memory.h"
+#include "trace.h"
 
 #define DATA_SIZE (1 << SHIFT)
 
@@ -240,6 +241,7 @@ WORD_TYPE helper_le_ld_name(CPUArchState *env, target_ulong addr,
     }
 
     haddr = addr + env->tlb_table[mmu_idx][index].addend;
+    trace_mmu_ld(haddr, DATA_SIZE);
 #if DATA_SIZE == 1
     res = glue(glue(ld, LSUFFIX), _p)((uint8_t *)haddr);
 #else
@@ -324,6 +326,7 @@ WORD_TYPE helper_be_ld_name(CPUArchState *env, target_ulong addr,
     }
 
     haddr = addr + env->tlb_table[mmu_idx][index].addend;
+    trace_mmu_ld(haddr, DATA_SIZE);
     res = glue(glue(ld, LSUFFIX), _be_p)((uint8_t *)haddr);
     return res;
 }
@@ -442,6 +445,7 @@ void helper_le_st_name(CPUArchState *env, target_ulong addr, DATA_TYPE val,
     }
 
     haddr = addr + env->tlb_table[mmu_idx][index].addend;
+    trace_mmu_st(haddr, DATA_SIZE);
 #if DATA_SIZE == 1
     glue(glue(st, SUFFIX), _p)((uint8_t *)haddr, val);
 #else
@@ -522,6 +526,7 @@ void helper_be_st_name(CPUArchState *env, target_ulong addr, DATA_TYPE val,
     }
 
     haddr = addr + env->tlb_table[mmu_idx][index].addend;
+    trace_mmu_st(haddr, DATA_SIZE);
     glue(glue(st, SUFFIX), _be_p)((uint8_t *)haddr, val);
 }
 #endif /* DATA_SIZE > 1 */
