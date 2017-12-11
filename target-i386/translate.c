@@ -7088,6 +7088,18 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
 
             break;
         }
+				if(modrm == 0x12)
+				{
+						gen_helper_trace_start();
+						gen_nop_modrm(env, s, modrm);
+						break;
+				}
+				if(modrm == 0x13)
+				{
+						gen_helper_trace_end();
+						gen_nop_modrm(env, s, modrm);
+						break;
+				}
 
         switch (modrm) {
             CASE_MODRM_MEM_OP(0): /* sgdt */

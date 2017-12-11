@@ -98,6 +98,9 @@ DEF_HELPER_2(inl, tl, env, i32)
 DEF_HELPER_FLAGS_4(bpt_io, TCG_CALL_NO_WG, void, env, i32, i32, tl)
 
 DEF_HELPER_0(mark_location, void)
+DEF_HELPER_0(trace_start, void)
+DEF_HELPER_0(trace_end, void)
+
 
 DEF_HELPER_3(svm_check_intercept_param, void, env, i32, i64)
 DEF_HELPER_3(vmexit, void, env, i32, i64)

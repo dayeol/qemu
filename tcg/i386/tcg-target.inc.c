@@ -21,7 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 #include "trace.h"
 #include "tcg-be-ldst.h"
 
@@ -1132,12 +1131,18 @@ static void* const trace_mmu_tcg_st_helper = trace_mmu_tcg_st;
 
 void trace_mmu_tcg_ld(target_ulong haddr, target_ulong vaddr, char bytes)
 {
-	trace_mmu_ld(haddr, bytes);
+	if(is_trace_started)
+	{
+		trace_mmu_ld(haddr, bytes);
+	}
 }
 
 void trace_mmu_tcg_st(target_ulong haddr, target_ulong vaddr, char bytes)
 {
-	trace_mmu_st(haddr, bytes);
+	if(is_trace_started)
+	{
+		trace_mmu_st(haddr, bytes);
+	}
 }
 
 /* helper signature: helper_ret_ld_mmu(CPUState *env, target_ulong addr,
