@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 
+#include "trace.h"
 #include "tcg-be-ldst.h"
 
 #ifdef CONFIG_DEBUG_TCG
@@ -1124,6 +1125,21 @@ static void tcg_out_jmp(TCGContext *s, tcg_insn_unit *dest)
 }
 
 #if defined(CONFIG_SOFTMMU)
+
+/* trace helper */
+static void* const trace_mmu_tcg_ld_helper = trace_mmu_tcg_ld;
+static void* const trace_mmu_tcg_st_helper = trace_mmu_tcg_st;
+
+void trace_mmu_tcg_ld(target_ulong haddr, target_ulong vaddr, char bytes)
+{
+	trace_mmu_ld(haddr, bytes);
+}
+
+void trace_mmu_tcg_st(target_ulong haddr, target_ulong vaddr, char bytes)
+{
+	trace_mmu_st(haddr, bytes);
+}
+
 /* helper signature: helper_ret_ld_mmu(CPUState *env, target_ulong addr,
  *                                     int mmu_idx, uintptr_t ra)
  */
@@ -1575,6 +1591,10 @@ static void tcg_out_qemu_ld(TCGContext *s, const TCGArg *args, bool is64)
     /* TLB Hit.  */
     tcg_out_qemu_ld_direct(s, datalo, datahi, TCG_REG_L1, -1, 0, 0, opc);
 
+		/* trace */
+		tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[2], 1<<(opc & 3));
+		tcg_out_call(s, trace_mmu_tcg_ld_helper); 
+
     /* Record the current context of a load into ldst label */
     add_qemu_ldst_label(s, true, oi, datalo, datahi, addrlo, addrhi,
                         s->code_ptr, label_ptr);
@@ -1714,6 +1734,10 @@ static void tcg_out_qemu_st(TCGContext *s, const TCGArg *args, bool is64)
 
     /* TLB Hit.  */
     tcg_out_qemu_st_direct(s, datalo, datahi, TCG_REG_L1, 0, 0, opc);
+
+		/* trace */
+		tcg_out_movi(s, TCG_TYPE_I32, tcg_target_call_iarg_regs[2], 1<<(opc & 3));
+		tcg_out_call(s, trace_mmu_tcg_st_helper); 
 
     /* Record the current context of a store into ldst label */
     add_qemu_ldst_label(s, false, oi, datalo, datahi, addrlo, addrhi,

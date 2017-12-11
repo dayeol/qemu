@@ -1038,6 +1038,8 @@ uint32_t helper_be_ldl_cmmu(CPUArchState *env, target_ulong addr,
 uint64_t helper_be_ldq_cmmu(CPUArchState *env, target_ulong addr,
                             TCGMemOpIdx oi, uintptr_t retaddr);
 
+void trace_mmu_tcg_ld(target_ulong haddr, target_ulong gaddr, char type);
+void trace_mmu_tcg_st(target_ulong haddr, target_ulong gaddr, char type);
 /* Temporary aliases until backends are converted.  */
 #ifdef TARGET_WORDS_BIGENDIAN
 # define helper_ret_ldsw_mmu  helper_be_ldsw_mmu
