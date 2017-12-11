@@ -7076,15 +7076,21 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
     case 0x101:
         modrm = cpu_ldub_code(env, s->pc++);
         if(modrm == 0x11)
-				{
-					//UCB: special trace function
-					gen_helper_mark_location();	
-          gen_nop_modrm(env, s, modrm);
-					break;
-				}
-				
-				switch (modrm) {
-        CASE_MODRM_MEM_OP(0): /* sgdt */
+        {
+            //UCB: special trace function
+            gen_helper_mark_location();
+            gen_nop_modrm(env, s, modrm);
+
+            // Flush TLB
+            X86CPU *cpu = x86_env_get_cpu(env);
+            CPUState *cs = CPU(cpu);
+            tlb_flush(cs, 1);
+
+            break;
+        }
+
+        switch (modrm) {
+            CASE_MODRM_MEM_OP(0): /* sgdt */
             gen_svm_check_intercept(s, pc_start, SVM_EXIT_GDTR_READ);
             gen_lea_modrm(env, s, modrm);
             tcg_gen_ld32u_tl(cpu_T0,
