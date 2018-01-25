@@ -1133,7 +1133,7 @@ void trace_mmu_tcg_ld(target_ulong haddr, target_ulong vaddr, char bytes)
 {
 	if(is_trace_started)
 	{
-		trace_mmu_ld(haddr, bytes);
+		trace_mmu_ld(vaddr, bytes);
 	}
 }
 
@@ -1141,7 +1141,7 @@ void trace_mmu_tcg_st(target_ulong haddr, target_ulong vaddr, char bytes)
 {
 	if(is_trace_started)
 	{
-		trace_mmu_st(haddr, bytes);
+		trace_mmu_st(vaddr, bytes);
 	}
 }
 
