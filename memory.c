@@ -23,6 +23,7 @@
 #include "qemu/error-report.h"
 #include "qom/object.h"
 #include "trace.h"
+#include "memtrace.h"
 
 #include "exec/memory-internal.h"
 #include "exec/ram_addr.h"
@@ -1314,6 +1315,7 @@ void memory_region_init_ram(MemoryRegion *mr,
     mr->destructor = memory_region_destructor_ram;
     mr->ram_block = qemu_ram_alloc(size, mr, errp);
     mr->dirty_log_mask = tcg_enabled() ? (1 << DIRTY_MEMORY_CODE) : 0;
+    memtrace_set_ram_base(mr->ram_block->host,size);
 }
 
 void memory_region_init_resizeable_ram(MemoryRegion *mr,

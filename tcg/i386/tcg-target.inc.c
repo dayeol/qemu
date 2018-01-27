@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include "trace.h"
+#include "memtrace.h"
 #include "tcg-be-ldst.h"
 
 #ifdef CONFIG_DEBUG_TCG
@@ -1133,7 +1133,7 @@ void trace_mmu_tcg_ld(target_ulong haddr, target_ulong vaddr, char bytes)
 {
 	if(is_trace_started)
 	{
-		trace_mmu_ld(haddr, bytes);
+		memtrace_ld(haddr, bytes);
 	}
 }
 
@@ -1141,7 +1141,7 @@ void trace_mmu_tcg_st(target_ulong haddr, target_ulong vaddr, char bytes)
 {
 	if(is_trace_started)
 	{
-		trace_mmu_st(haddr, bytes);
+		memtrace_st(haddr, bytes);
 	}
 }
 

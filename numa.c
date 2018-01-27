@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 
+#include "memtrace.h"
 #include "qemu/osdep.h"
 #include "sysemu/numa.h"
 #include "exec/cpu-common.h"

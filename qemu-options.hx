@@ -3737,6 +3737,16 @@ STEXI
 Dump json-encoded vmstate information for current machine type to file
 in @var{file}
 ETEXI
+DEFHEADING()
+
+DEFHEADING(Memory tracing option:)
+
+DEF("memtrace", HAS_ARG, QEMU_OPTION_memtrace,
+    "-memtrace [enable=[on|off][,region=<start>:<end>][,file=<file>]\n"
+    "                Physical memory trace.\n",
+    QEMU_ARCH_I386)
+
+DEFHEADING()
 
 DEFHEADING(Generic object creation)
 

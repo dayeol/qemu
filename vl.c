@@ -105,6 +105,7 @@ int main(int argc, char **argv)
 #include "slirp/libslirp.h"
 
 #include "trace.h"
+#include "memtrace.h"
 #include "trace/control.h"
 #include "qemu/queue.h"
 #include "sysemu/cpus.h"
@@ -526,6 +527,27 @@ static QemuOptsList qemu_fw_cfg_opts = {
         },
         { /* end of list */ }
     },
+};
+
+static QemuOptsList qemu_memtrace_opts = {
+    .name = "memtrace",
+    .implied_opt_name = "name",
+    .head = QTAILQ_HEAD_INITIALIZER(qemu_memtrace_opts.head),
+    .desc = {
+        {
+            .name = "enable",
+            .type = QEMU_OPT_BOOL,
+        }, {
+            .name = "region",
+            .type = QEMU_OPT_STRING,
+            .help = "Filters out any address outside of this range if set",
+        }, {
+            .name = "file",
+            .type = QEMU_OPT_STRING,
+            .help = "Memtrace file",
+        },
+        { /* end of list */ }
+    }    
 };
 
 /**
@@ -3033,6 +3055,7 @@ int main(int argc, char **argv, char **envp)
     qemu_add_opts(&qemu_icount_opts);
     qemu_add_opts(&qemu_semihosting_config_opts);
     qemu_add_opts(&qemu_fw_cfg_opts);
+    qemu_add_opts(&qemu_memtrace_opts);
     module_call_init(MODULE_INIT_OPTS);
 
     runstate_init();
@@ -4024,6 +4047,23 @@ int main(int argc, char **argv, char **envp)
                 if (vmstate_dump_file == NULL) {
                     error_report("open %s: %s", optarg, strerror(errno));
                     exit(1);
+                }
+                break;
+            case QEMU_OPTION_memtrace:
+                memtrace_enable = true;
+                opts = qemu_opts_parse_noisily(qemu_find_opts("memtrace"), 
+                                                optarg, false);
+                if (opts != NULL) {
+                  memtrace_enable = qemu_opt_get_bool(opts, "enable", true);
+                  const char* filename = qemu_opt_get(opts, "file");
+                  memtrace_file = fopen(filename, "w"); 
+                  if(!memtrace_file)
+                  {
+                    fprintf(stderr, "File not exist (memtrace)\n");
+                    exit(1);
+                  }
+                  const char* region = qemu_opt_get(opts, "region");
+                  memtrace_set_region( region );
                 }
                 break;
             default:
