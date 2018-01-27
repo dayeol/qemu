@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-
+extern bool memtrace_is_started;
 extern FILE* memtrace_file;
 extern bool memtrace_enable;
 extern uint64_t memtrace_region_start;
@@ -36,6 +36,11 @@ static inline void memtrace_ld(uint64_t addr, unsigned size)
 static inline void memtrace_st(uint64_t addr, unsigned size)
 {
     memtrace(addr,size,true);
+}
+
+static inline void memtrace_mark_location(void)
+{
+    fprintf(memtrace_file,"===UCBTRACE===");
 }
 
 #endif

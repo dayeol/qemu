@@ -23,22 +23,21 @@
 #include "exec/cpu_ldst.h"
 #include "exec/address-spaces.h"
 #include "trace.h"
-
-bool is_trace_started=false;
+#include "memtrace.h"
 
 void helper_mark_location(void)
 {
-	trace_mark_location();
+    memtrace_mark_location();
 }
 
 void helper_trace_start(void)
 {
-	is_trace_started = true;	
+	memtrace_is_started = true;	
 }
 
 void helper_trace_end(void)
 {
-	is_trace_started = false;
+	memtrace_is_started = false;	
 }
 
 void helper_outb(CPUX86State *env, uint32_t port, uint32_t data)

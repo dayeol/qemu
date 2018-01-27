@@ -1,6 +1,7 @@
 #include "memtrace.h"
 #include <string.h>
 
+bool memtrace_is_started = false; /* dynamically change */
 bool memtrace_enable = false;
 FILE* memtrace_file;
 uint64_t memtrace_region_start=0;
@@ -40,14 +41,15 @@ exit_error:
 void memtrace_set_ram_base(uint8_t* addr,uint64_t size)
 {
     /* only if this is the first call, because the first one is for the system memory. */
-    if(memtrace_ram_base == 0)
+    if(memtrace_ram_base == 0) {
         memtrace_ram_base = (uint64_t) addr;
-    fprintf(memtrace_file, "RAM base: %" PRIx64 ", size:%"PRIx64"\n", memtrace_ram_base, size);
+        fprintf(memtrace_file, "RAM base: %" PRIx64 ", size:%"PRIx64"\n", memtrace_ram_base, size);
+    }
 }
 
 inline void memtrace(uint64_t addr, unsigned size, bool is_store)
 {
-    if(!memtrace_enable)
+    if(!memtrace_enable || !memtrace_is_started)
         return;
 
     if( addr - memtrace_ram_base < memtrace_region_start || addr - memtrace_ram_base >= memtrace_region_end)
