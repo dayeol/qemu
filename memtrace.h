@@ -40,7 +40,7 @@ static inline void memtrace_st(uint64_t addr, unsigned size)
 
 static inline void memtrace_mark_location(void)
 {
-    fprintf(memtrace_file,"===UCBTRACE===");
+    fprintf(memtrace_file,"===UCBTRACE===\n");
 }
 
 #endif
