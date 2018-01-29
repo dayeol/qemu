@@ -7082,9 +7082,9 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
             gen_nop_modrm(env, s, modrm);
 
             // Flush TLB
-            X86CPU *cpu = x86_env_get_cpu(env);
-            CPUState *cs = CPU(cpu);
-            tlb_flush(cs, 1);
+            // X86CPU *cpu = x86_env_get_cpu(env);
+            // CPUState *cs = CPU(cpu);
+            // tlb_flush(cs, 1);
 
             break;
         }
@@ -7098,6 +7098,12 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
 				{
 						gen_helper_trace_end();
 						gen_nop_modrm(env, s, modrm);
+						break;
+				}
+				if(modrm == 0x10)
+				{   
+            gen_helper_mark_location2();
+            gen_nop_modrm(env, s, modrm);
 						break;
 				}
 

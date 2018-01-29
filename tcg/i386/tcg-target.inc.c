@@ -1131,12 +1131,12 @@ static void* const trace_mmu_tcg_st_helper = trace_mmu_tcg_st;
 
 void trace_mmu_tcg_ld(target_ulong haddr, target_ulong vaddr, char bytes)
 {
-	memtrace_ld(haddr, bytes);
+	memtrace_ld(vaddr, bytes);
 }
 
 void trace_mmu_tcg_st(target_ulong haddr, target_ulong vaddr, char bytes)
 {
-	memtrace_st(haddr, bytes);
+	memtrace_st(vaddr, bytes);
 }
 
 /* helper signature: helper_ret_ld_mmu(CPUState *env, target_ulong addr,
