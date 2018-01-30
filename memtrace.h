@@ -40,11 +40,13 @@ static inline void memtrace_st(uint64_t addr, unsigned size)
 
 static inline void memtrace_mark_location(void)
 {
-    fprintf(memtrace_file,"===UCBTRACE===\n");
+    if(memtrace_file)
+        fprintf(memtrace_file,"===UCBTRACE===\n");
 }
 
 static inline void memtrace_mark_location2(void)
 {
-    fprintf(memtrace_file,"---JEONGSEOK---\n");
+    if(memtrace_file)
+        fprintf(memtrace_file,"---JEONGSEOK---\n");
 }
 #endif
