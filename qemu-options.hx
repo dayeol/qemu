@@ -3746,6 +3746,12 @@ DEF("memtrace", HAS_ARG, QEMU_OPTION_memtrace,
     "                Physical memory trace.\n",
     QEMU_ARCH_I386)
 
+DEF("cachesim", HAS_ARG, QEMU_OPTION_cachesim,
+    "-cachesim [l1=<sets>:<ways>:<blocks>][,l2=...][,l3=...]\n"
+    "                Simulate caches with parameters\n"
+    "                Must be used with -memetrace\n",
+    QEMU_ARCH_I386)
+
 DEFHEADING()
 
 DEFHEADING(Generic object creation)

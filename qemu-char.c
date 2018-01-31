@@ -40,7 +40,7 @@
 #include "io/channel-file.h"
 #include "io/channel-tls.h"
 #include "sysemu/replay.h"
-
+#include "cachesim.h"
 #include <zlib.h>
 
 #ifndef _WIN32
@@ -627,6 +627,9 @@ static int mux_proc_byte(CharDriverState *chr, MuxDriver *d, int ch)
         case 'x':
             {
                  const char *term =  "QEMU: Terminated\n\r";
+                 /* FIXME must print out somewhere else. */
+                 cachesim_destroy();
+
                  qemu_chr_fe_write(chr, (uint8_t *)term, strlen(term));
                  exit(0);
                  break;

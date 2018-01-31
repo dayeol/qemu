@@ -7,12 +7,14 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include "cachesim.h"
 
 extern bool memtrace_is_started;
 extern FILE* memtrace_file;
 extern bool memtrace_enable;
 extern uint64_t memtrace_region_start;
 extern uint64_t memtrace_region_end;
+extern void (*cache_miss_callback)(uint64_t, unsigned, bool);
 
 void memtrace_set_region(const char* region);
 void memtrace_set_ram_base(uint8_t* addr,uint64_t size);
@@ -27,6 +29,7 @@ static inline void memtrace_vprintf(const char* fmt, ...)
         va_end(ap);
     }
 }
+void log_filtered_trace(uint64_t addr, unsigned size, bool is_store);
 
 static inline void memtrace_ld(uint64_t addr, unsigned size)
 {

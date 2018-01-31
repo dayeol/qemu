@@ -550,6 +550,25 @@ static QemuOptsList qemu_memtrace_opts = {
     }    
 };
 
+static QemuOptsList qemu_cachesim_opts = {
+    .name = "cachesim",
+    .implied_opt_name = "name",
+    .head = QTAILQ_HEAD_INITIALIZER(qemu_cachesim_opts.head),
+    .desc = {
+        {
+            .name = "l1",
+            .type = QEMU_OPT_STRING
+        }, {
+            .name = "l2",
+            .type = QEMU_OPT_STRING,
+        }, {
+            .name = "l3",
+            .type = QEMU_OPT_STRING,
+        },
+        { /* end of list */ }
+    }
+};
+
 /**
  * Get machine options
  *
@@ -3056,6 +3075,8 @@ int main(int argc, char **argv, char **envp)
     qemu_add_opts(&qemu_semihosting_config_opts);
     qemu_add_opts(&qemu_fw_cfg_opts);
     qemu_add_opts(&qemu_memtrace_opts);
+    qemu_add_opts(&qemu_cachesim_opts);
+    
     module_call_init(MODULE_INIT_OPTS);
 
     runstate_init();
@@ -4065,6 +4086,29 @@ int main(int argc, char **argv, char **envp)
                   const char* region = qemu_opt_get(opts, "region");
                   memtrace_set_region( region );
                 }
+
+                break;
+            case QEMU_OPTION_cachesim:
+                if(!memtrace_enable) {
+                    error_report("This option should be used with -memtrace option.");
+                    exit(1);
+                }
+                opts = qemu_opts_parse_noisily(qemu_find_opts("cachesim"), 
+                                                optarg, false);
+                const char* l1_opt = qemu_opt_get(opts, "l1");
+                if(l1_opt != NULL)
+                    init_cache_l1(l1_opt);
+                const char* l2_opt = qemu_opt_get(opts, "l2");
+                if(l2_opt != NULL)
+                    init_cache_l2(l2_opt);
+                const char* l3_opt = qemu_opt_get(opts, "l3");
+                if(l3_opt != NULL)
+                    init_cache_l3(l3_opt);
+
+                init_cachesim();
+                //const char* l1_opt = qemu_opt_get(opts, "l1");
+                //cache_l1i = new icache_sim_t(l1_opt); 
+                
                 break;
             default:
                 os_parse_cmd_args(popt->index, optarg);
