@@ -71,6 +71,45 @@
 
 //#define MACRO_TEST   1
 
+#define QSIM_STORE(name, ldname, bytes, d, a, i, mop)               \
+({                                                                  \
+   tcg_gen_qemu_##name(d, a, i, mop);                               \
+   gen_helper_memtrace_st(cpu_env, a, tcg_const_i32(bytes));        \
+ })
+
+/* The qemu_ld has to be performed twice, once before and once after the
+ * callback. This has unfortunate performance penalties, but this allows the
+ * callback to modify the value being read and keeps the callback itself from
+ * causing page faults.
+ */
+#define QSIM_LOAD(name, bytes, d, a, i, mop)                        \
+do {                                                                \
+    tcg_gen_qemu_##name(d, a, i, mop);                              \
+    gen_helper_memtrace_ld(cpu_env, a, tcg_const_i32(bytes));       \
+} while(0)
+
+#define tcg_gen_qsim_st_tl(data, addr, idx, mop)                \
+do {                                                            \
+    tcg_gen_qemu_st_tl(data, addr, idx, mop);                   \
+    gen_helper_memtrace_st(cpu_env, addr, tcg_const_i32(1 << (idx & 3))); \
+} while (0)
+
+#define tcg_gen_qsim_ld_tl(data, addr, idx, mop)                \
+do {                                                            \
+    tcg_gen_qemu_ld_tl(data, addr, idx, mop);                   \
+    gen_helper_memtrace_ld(cpu_env, addr, tcg_const_i32(1 << (idx & 3))); \
+} while (0)
+
+#define tcg_gen_qsim_ld_i32(dst, addr, idx, mop) \
+    QSIM_LOAD(ld_i32, 4, dst, addr, idx, mop)
+#define tcg_gen_qsim_ld_i64(dst, addr, idx, mop) \
+    QSIM_LOAD(ld_i64, 8, dst, addr, idx, mop)
+
+#define tcg_gen_qsim_st_i32(data, addr, idx, mop) \
+    QSIM_STORE(st_i32, ld_i32, 4, data, addr, idx, mop)
+#define tcg_gen_qsim_st_i64(data, addr, idx, mop) \
+    QSIM_STORE(st_i64, ld_i64, 8, data, addr, idx, mop)
+
 /* global register indexes */
 static TCGv_env cpu_env;
 static TCGv cpu_A0;
@@ -417,12 +456,12 @@ static inline void gen_op_add_reg_T0(TCGMemOp size, int reg)
 
 static inline void gen_op_ld_v(DisasContext *s, int idx, TCGv t0, TCGv a0)
 {
-    tcg_gen_qemu_ld_tl(t0, a0, s->mem_index, idx | MO_LE);
+    tcg_gen_qsim_ld_tl(t0, a0, s->mem_index, idx | MO_LE);
 }
 
 static inline void gen_op_st_v(DisasContext *s, int idx, TCGv t0, TCGv a0)
 {
-    tcg_gen_qemu_st_tl(t0, a0, s->mem_index, idx | MO_LE);
+    tcg_gen_qsim_st_tl(t0, a0, s->mem_index, idx | MO_LE);
 }
 
 static inline void gen_op_st_rm_T0_A0(DisasContext *s, int idx, int d)
@@ -2505,23 +2544,23 @@ static void gen_jmp(DisasContext *s, target_ulong eip)
 
 static inline void gen_ldq_env_A0(DisasContext *s, int offset)
 {
-    tcg_gen_qemu_ld_i64(cpu_tmp1_i64, cpu_A0, s->mem_index, MO_LEQ);
+    tcg_gen_qsim_ld_i64(cpu_tmp1_i64, cpu_A0, s->mem_index, MO_LEQ);
     tcg_gen_st_i64(cpu_tmp1_i64, cpu_env, offset);
 }
 
 static inline void gen_stq_env_A0(DisasContext *s, int offset)
 {
     tcg_gen_ld_i64(cpu_tmp1_i64, cpu_env, offset);
-    tcg_gen_qemu_st_i64(cpu_tmp1_i64, cpu_A0, s->mem_index, MO_LEQ);
+    tcg_gen_qsim_st_i64(cpu_tmp1_i64, cpu_A0, s->mem_index, MO_LEQ);
 }
 
 static inline void gen_ldo_env_A0(DisasContext *s, int offset)
 {
     int mem_index = s->mem_index;
-    tcg_gen_qemu_ld_i64(cpu_tmp1_i64, cpu_A0, mem_index, MO_LEQ);
+    tcg_gen_qsim_ld_i64(cpu_tmp1_i64, cpu_A0, mem_index, MO_LEQ);
     tcg_gen_st_i64(cpu_tmp1_i64, cpu_env, offset + offsetof(ZMMReg, ZMM_Q(0)));
     tcg_gen_addi_tl(cpu_tmp0, cpu_A0, 8);
-    tcg_gen_qemu_ld_i64(cpu_tmp1_i64, cpu_tmp0, mem_index, MO_LEQ);
+    tcg_gen_qsim_ld_i64(cpu_tmp1_i64, cpu_tmp0, mem_index, MO_LEQ);
     tcg_gen_st_i64(cpu_tmp1_i64, cpu_env, offset + offsetof(ZMMReg, ZMM_Q(1)));
 }
 
@@ -2529,10 +2568,10 @@ static inline void gen_sto_env_A0(DisasContext *s, int offset)
 {
     int mem_index = s->mem_index;
     tcg_gen_ld_i64(cpu_tmp1_i64, cpu_env, offset + offsetof(ZMMReg, ZMM_Q(0)));
-    tcg_gen_qemu_st_i64(cpu_tmp1_i64, cpu_A0, mem_index, MO_LEQ);
+    tcg_gen_qsim_st_i64(cpu_tmp1_i64, cpu_A0, mem_index, MO_LEQ);
     tcg_gen_addi_tl(cpu_tmp0, cpu_A0, 8);
     tcg_gen_ld_i64(cpu_tmp1_i64, cpu_env, offset + offsetof(ZMMReg, ZMM_Q(1)));
-    tcg_gen_qemu_st_i64(cpu_tmp1_i64, cpu_tmp0, mem_index, MO_LEQ);
+    tcg_gen_qsim_st_i64(cpu_tmp1_i64, cpu_tmp0, mem_index, MO_LEQ);
 }
 
 static inline void gen_op_movo(int d_offset, int s_offset)
@@ -3566,13 +3605,13 @@ static void gen_sse(CPUX86State *env, DisasContext *s, int b,
                         break;
                     case 0x21: case 0x31: /* pmovsxbd, pmovzxbd */
                     case 0x24: case 0x34: /* pmovsxwq, pmovzxwq */
-                        tcg_gen_qemu_ld_i32(cpu_tmp2_i32, cpu_A0,
+                        tcg_gen_qsim_ld_i32(cpu_tmp2_i32, cpu_A0,
                                             s->mem_index, MO_LEUL);
                         tcg_gen_st_i32(cpu_tmp2_i32, cpu_env, op2_offset +
                                         offsetof(ZMMReg, ZMM_L(0)));
                         break;
                     case 0x22: case 0x32: /* pmovsxbq, pmovzxbq */
-                        tcg_gen_qemu_ld_tl(cpu_tmp0, cpu_A0,
+                        tcg_gen_qsim_ld_tl(cpu_tmp0, cpu_A0,
                                            s->mem_index, MO_LEUW);
                         tcg_gen_st16_tl(cpu_tmp0, cpu_env, op2_offset +
                                         offsetof(ZMMReg, ZMM_W(0)));
@@ -3661,11 +3700,11 @@ static void gen_sse(CPUX86State *env, DisasContext *s, int b,
 
                 gen_lea_modrm(env, s, modrm);
                 if ((b & 1) == 0) {
-                    tcg_gen_qemu_ld_tl(cpu_T0, cpu_A0,
+                    tcg_gen_qsim_ld_tl(cpu_T0, cpu_A0,
                                        s->mem_index, ot | MO_BE);
                     gen_op_mov_reg_v(ot, reg, cpu_T0);
                 } else {
-                    tcg_gen_qemu_st_tl(cpu_regs[reg], cpu_A0,
+                    tcg_gen_qsim_st_tl(cpu_regs[reg], cpu_A0,
                                        s->mem_index, ot | MO_BE);
                 }
                 break;
@@ -4004,7 +4043,7 @@ static void gen_sse(CPUX86State *env, DisasContext *s, int b,
                     if (mod == 3) {
                         gen_op_mov_reg_v(ot, rm, cpu_T0);
                     } else {
-                        tcg_gen_qemu_st_tl(cpu_T0, cpu_A0,
+                        tcg_gen_qsim_st_tl(cpu_T0, cpu_A0,
                                            s->mem_index, MO_UB);
                     }
                     break;
@@ -4014,7 +4053,7 @@ static void gen_sse(CPUX86State *env, DisasContext *s, int b,
                     if (mod == 3) {
                         gen_op_mov_reg_v(ot, rm, cpu_T0);
                     } else {
-                        tcg_gen_qemu_st_tl(cpu_T0, cpu_A0,
+                        tcg_gen_qsim_st_tl(cpu_T0, cpu_A0,
                                            s->mem_index, MO_LEUW);
                     }
                     break;
@@ -4026,7 +4065,7 @@ static void gen_sse(CPUX86State *env, DisasContext *s, int b,
                         if (mod == 3) {
                             tcg_gen_extu_i32_tl(cpu_regs[rm], cpu_tmp2_i32);
                         } else {
-                            tcg_gen_qemu_st_i32(cpu_tmp2_i32, cpu_A0,
+                            tcg_gen_qsim_st_i32(cpu_tmp2_i32, cpu_A0,
                                                 s->mem_index, MO_LEUL);
                         }
                     } else { /* pextrq */
@@ -4037,7 +4076,7 @@ static void gen_sse(CPUX86State *env, DisasContext *s, int b,
                         if (mod == 3) {
                             tcg_gen_mov_i64(cpu_regs[rm], cpu_tmp1_i64);
                         } else {
-                            tcg_gen_qemu_st_i64(cpu_tmp1_i64, cpu_A0,
+                            tcg_gen_qsim_st_i64(cpu_tmp1_i64, cpu_A0,
                                                 s->mem_index, MO_LEQ);
                         }
 #else
@@ -4051,7 +4090,7 @@ static void gen_sse(CPUX86State *env, DisasContext *s, int b,
                     if (mod == 3) {
                         gen_op_mov_reg_v(ot, rm, cpu_T0);
                     } else {
-                        tcg_gen_qemu_st_tl(cpu_T0, cpu_A0,
+                        tcg_gen_qsim_st_tl(cpu_T0, cpu_A0,
                                            s->mem_index, MO_LEUL);
                     }
                     break;
@@ -4059,7 +4098,7 @@ static void gen_sse(CPUX86State *env, DisasContext *s, int b,
                     if (mod == 3) {
                         gen_op_mov_v_reg(MO_32, cpu_T0, rm);
                     } else {
-                        tcg_gen_qemu_ld_tl(cpu_T0, cpu_A0,
+                        tcg_gen_qsim_ld_tl(cpu_T0, cpu_A0,
                                            s->mem_index, MO_UB);
                     }
                     tcg_gen_st8_tl(cpu_T0, cpu_env, offsetof(CPUX86State,
@@ -4071,7 +4110,7 @@ static void gen_sse(CPUX86State *env, DisasContext *s, int b,
                                         offsetof(CPUX86State,xmm_regs[rm]
                                                 .ZMM_L((val >> 6) & 3)));
                     } else {
-                        tcg_gen_qemu_ld_i32(cpu_tmp2_i32, cpu_A0,
+                        tcg_gen_qsim_ld_i32(cpu_tmp2_i32, cpu_A0,
                                             s->mem_index, MO_LEUL);
                     }
                     tcg_gen_st_i32(cpu_tmp2_i32, cpu_env,
@@ -4099,7 +4138,7 @@ static void gen_sse(CPUX86State *env, DisasContext *s, int b,
                         if (mod == 3) {
                             tcg_gen_trunc_tl_i32(cpu_tmp2_i32, cpu_regs[rm]);
                         } else {
-                            tcg_gen_qemu_ld_i32(cpu_tmp2_i32, cpu_A0,
+                            tcg_gen_qsim_ld_i32(cpu_tmp2_i32, cpu_A0,
                                                 s->mem_index, MO_LEUL);
                         }
                         tcg_gen_st_i32(cpu_tmp2_i32, cpu_env,
@@ -4110,7 +4149,7 @@ static void gen_sse(CPUX86State *env, DisasContext *s, int b,
                         if (mod == 3) {
                             gen_op_mov_v_reg(ot, cpu_tmp1_i64, rm);
                         } else {
-                            tcg_gen_qemu_ld_i64(cpu_tmp1_i64, cpu_A0,
+                            tcg_gen_qsim_ld_i64(cpu_tmp1_i64, cpu_A0,
                                                 s->mem_index, MO_LEQ);
                         }
                         tcg_gen_st_i64(cpu_tmp1_i64, cpu_env,
@@ -5615,23 +5654,23 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
 
                     switch(op >> 4) {
                     case 0:
-                        tcg_gen_qemu_ld_i32(cpu_tmp2_i32, cpu_A0,
+                        tcg_gen_qsim_ld_i32(cpu_tmp2_i32, cpu_A0,
                                             s->mem_index, MO_LEUL);
                         gen_helper_flds_FT0(cpu_env, cpu_tmp2_i32);
                         break;
                     case 1:
-                        tcg_gen_qemu_ld_i32(cpu_tmp2_i32, cpu_A0,
+                        tcg_gen_qsim_ld_i32(cpu_tmp2_i32, cpu_A0,
                                             s->mem_index, MO_LEUL);
                         gen_helper_fildl_FT0(cpu_env, cpu_tmp2_i32);
                         break;
                     case 2:
-                        tcg_gen_qemu_ld_i64(cpu_tmp1_i64, cpu_A0,
+                        tcg_gen_qsim_ld_i64(cpu_tmp1_i64, cpu_A0,
                                             s->mem_index, MO_LEQ);
                         gen_helper_fldl_FT0(cpu_env, cpu_tmp1_i64);
                         break;
                     case 3:
                     default:
-                        tcg_gen_qemu_ld_i32(cpu_tmp2_i32, cpu_A0,
+                        tcg_gen_qsim_ld_i32(cpu_tmp2_i32, cpu_A0,
                                             s->mem_index, MO_LESW);
                         gen_helper_fildl_FT0(cpu_env, cpu_tmp2_i32);
                         break;
@@ -5654,23 +5693,23 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
                 case 0:
                     switch(op >> 4) {
                     case 0:
-                        tcg_gen_qemu_ld_i32(cpu_tmp2_i32, cpu_A0,
+                        tcg_gen_qsim_ld_i32(cpu_tmp2_i32, cpu_A0,
                                             s->mem_index, MO_LEUL);
                         gen_helper_flds_ST0(cpu_env, cpu_tmp2_i32);
                         break;
                     case 1:
-                        tcg_gen_qemu_ld_i32(cpu_tmp2_i32, cpu_A0,
+                        tcg_gen_qsim_ld_i32(cpu_tmp2_i32, cpu_A0,
                                             s->mem_index, MO_LEUL);
                         gen_helper_fildl_ST0(cpu_env, cpu_tmp2_i32);
                         break;
                     case 2:
-                        tcg_gen_qemu_ld_i64(cpu_tmp1_i64, cpu_A0,
+                        tcg_gen_qsim_ld_i64(cpu_tmp1_i64, cpu_A0,
                                             s->mem_index, MO_LEQ);
                         gen_helper_fldl_ST0(cpu_env, cpu_tmp1_i64);
                         break;
                     case 3:
                     default:
-                        tcg_gen_qemu_ld_i32(cpu_tmp2_i32, cpu_A0,
+                        tcg_gen_qsim_ld_i32(cpu_tmp2_i32, cpu_A0,
                                             s->mem_index, MO_LESW);
                         gen_helper_fildl_ST0(cpu_env, cpu_tmp2_i32);
                         break;
@@ -5681,18 +5720,18 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
                     switch(op >> 4) {
                     case 1:
                         gen_helper_fisttl_ST0(cpu_tmp2_i32, cpu_env);
-                        tcg_gen_qemu_st_i32(cpu_tmp2_i32, cpu_A0,
+                        tcg_gen_qsim_st_i32(cpu_tmp2_i32, cpu_A0,
                                             s->mem_index, MO_LEUL);
                         break;
                     case 2:
                         gen_helper_fisttll_ST0(cpu_tmp1_i64, cpu_env);
-                        tcg_gen_qemu_st_i64(cpu_tmp1_i64, cpu_A0,
+                        tcg_gen_qsim_st_i64(cpu_tmp1_i64, cpu_A0,
                                             s->mem_index, MO_LEQ);
                         break;
                     case 3:
                     default:
                         gen_helper_fistt_ST0(cpu_tmp2_i32, cpu_env);
-                        tcg_gen_qemu_st_i32(cpu_tmp2_i32, cpu_A0,
+                        tcg_gen_qsim_st_i32(cpu_tmp2_i32, cpu_A0,
                                             s->mem_index, MO_LEUW);
                         break;
                     }
@@ -5702,23 +5741,23 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
                     switch(op >> 4) {
                     case 0:
                         gen_helper_fsts_ST0(cpu_tmp2_i32, cpu_env);
-                        tcg_gen_qemu_st_i32(cpu_tmp2_i32, cpu_A0,
+                        tcg_gen_qsim_st_i32(cpu_tmp2_i32, cpu_A0,
                                             s->mem_index, MO_LEUL);
                         break;
                     case 1:
                         gen_helper_fistl_ST0(cpu_tmp2_i32, cpu_env);
-                        tcg_gen_qemu_st_i32(cpu_tmp2_i32, cpu_A0,
+                        tcg_gen_qsim_st_i32(cpu_tmp2_i32, cpu_A0,
                                             s->mem_index, MO_LEUL);
                         break;
                     case 2:
                         gen_helper_fstl_ST0(cpu_tmp1_i64, cpu_env);
-                        tcg_gen_qemu_st_i64(cpu_tmp1_i64, cpu_A0,
+                        tcg_gen_qsim_st_i64(cpu_tmp1_i64, cpu_A0,
                                             s->mem_index, MO_LEQ);
                         break;
                     case 3:
                     default:
                         gen_helper_fist_ST0(cpu_tmp2_i32, cpu_env);
-                        tcg_gen_qemu_st_i32(cpu_tmp2_i32, cpu_A0,
+                        tcg_gen_qsim_st_i32(cpu_tmp2_i32, cpu_A0,
                                             s->mem_index, MO_LEUW);
                         break;
                     }
@@ -5731,7 +5770,7 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
                 gen_helper_fldenv(cpu_env, cpu_A0, tcg_const_i32(dflag - 1));
                 break;
             case 0x0d: /* fldcw mem */
-                tcg_gen_qemu_ld_i32(cpu_tmp2_i32, cpu_A0,
+                tcg_gen_qsim_ld_i32(cpu_tmp2_i32, cpu_A0,
                                     s->mem_index, MO_LEUW);
                 gen_helper_fldcw(cpu_env, cpu_tmp2_i32);
                 break;
@@ -5740,7 +5779,7 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
                 break;
             case 0x0f: /* fnstcw mem */
                 gen_helper_fnstcw(cpu_tmp2_i32, cpu_env);
-                tcg_gen_qemu_st_i32(cpu_tmp2_i32, cpu_A0,
+                tcg_gen_qsim_st_i32(cpu_tmp2_i32, cpu_A0,
                                     s->mem_index, MO_LEUW);
                 break;
             case 0x1d: /* fldt mem */
@@ -5758,7 +5797,7 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
                 break;
             case 0x2f: /* fnstsw mem */
                 gen_helper_fnstsw(cpu_tmp2_i32, cpu_env);
-                tcg_gen_qemu_st_i32(cpu_tmp2_i32, cpu_A0,
+                tcg_gen_qsim_st_i32(cpu_tmp2_i32, cpu_A0,
                                     s->mem_index, MO_LEUW);
                 break;
             case 0x3c: /* fbld */
@@ -5769,12 +5808,12 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
                 gen_helper_fpop(cpu_env);
                 break;
             case 0x3d: /* fildll */
-                tcg_gen_qemu_ld_i64(cpu_tmp1_i64, cpu_A0, s->mem_index, MO_LEQ);
+                tcg_gen_qsim_ld_i64(cpu_tmp1_i64, cpu_A0, s->mem_index, MO_LEQ);
                 gen_helper_fildll_ST0(cpu_env, cpu_tmp1_i64);
                 break;
             case 0x3f: /* fistpll */
                 gen_helper_fistll_ST0(cpu_tmp1_i64, cpu_env);
-                tcg_gen_qemu_st_i64(cpu_tmp1_i64, cpu_A0, s->mem_index, MO_LEQ);
+                tcg_gen_qsim_st_i64(cpu_tmp1_i64, cpu_A0, s->mem_index, MO_LEQ);
                 gen_helper_fpop(cpu_env);
                 break;
             default:
@@ -7604,16 +7643,16 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
                 } else {
                     gen_lea_modrm(env, s, modrm);
                     if (CODE64(s)) {
-                        tcg_gen_qemu_ld_i64(cpu_bndl[reg], cpu_A0,
+                        tcg_gen_qsim_ld_i64(cpu_bndl[reg], cpu_A0,
                                             s->mem_index, MO_LEQ);
                         tcg_gen_addi_tl(cpu_A0, cpu_A0, 8);
-                        tcg_gen_qemu_ld_i64(cpu_bndu[reg], cpu_A0,
+                        tcg_gen_qsim_ld_i64(cpu_bndu[reg], cpu_A0,
                                             s->mem_index, MO_LEQ);
                     } else {
-                        tcg_gen_qemu_ld_i64(cpu_bndl[reg], cpu_A0,
+                        tcg_gen_qsim_ld_i64(cpu_bndl[reg], cpu_A0,
                                             s->mem_index, MO_LEUL);
                         tcg_gen_addi_tl(cpu_A0, cpu_A0, 4);
-                        tcg_gen_qemu_ld_i64(cpu_bndu[reg], cpu_A0,
+                        tcg_gen_qsim_ld_i64(cpu_bndu[reg], cpu_A0,
                                             s->mem_index, MO_LEUL);
                     }
                     /* bnd registers are now in-use */
@@ -7711,16 +7750,16 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
                 } else {
                     gen_lea_modrm(env, s, modrm);
                     if (CODE64(s)) {
-                        tcg_gen_qemu_st_i64(cpu_bndl[reg], cpu_A0,
+                        tcg_gen_qsim_st_i64(cpu_bndl[reg], cpu_A0,
                                             s->mem_index, MO_LEQ);
                         tcg_gen_addi_tl(cpu_A0, cpu_A0, 8);
-                        tcg_gen_qemu_st_i64(cpu_bndu[reg], cpu_A0,
+                        tcg_gen_qsim_st_i64(cpu_bndu[reg], cpu_A0,
                                             s->mem_index, MO_LEQ);
                     } else {
-                        tcg_gen_qemu_st_i64(cpu_bndl[reg], cpu_A0,
+                        tcg_gen_qsim_st_i64(cpu_bndl[reg], cpu_A0,
                                             s->mem_index, MO_LEUL);
                         tcg_gen_addi_tl(cpu_A0, cpu_A0, 4);
-                        tcg_gen_qemu_st_i64(cpu_bndu[reg], cpu_A0,
+                        tcg_gen_qsim_st_i64(cpu_bndu[reg], cpu_A0,
                                             s->mem_index, MO_LEUL);
                     }
                 }
@@ -7901,7 +7940,7 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
                 break;
             }
             gen_lea_modrm(env, s, modrm);
-            tcg_gen_qemu_ld_i32(cpu_tmp2_i32, cpu_A0, s->mem_index, MO_LEUL);
+            tcg_gen_qsim_ld_i32(cpu_tmp2_i32, cpu_A0, s->mem_index, MO_LEUL);
             gen_helper_ldmxcsr(cpu_env, cpu_tmp2_i32);
             break;
 

@@ -18,7 +18,7 @@ extern void (*cache_miss_callback)(uint64_t, unsigned, bool);
 
 void memtrace_set_region(const char* region);
 void memtrace_set_ram_base(uint8_t* addr,uint64_t size);
-inline void memtrace(uint64_t addr, unsigned size, bool is_store);
+//void memtrace(uint64_t addr, unsigned size, bool is_store);
 
 static inline void memtrace_vprintf(const char* fmt, ...)
 {
@@ -31,6 +31,7 @@ static inline void memtrace_vprintf(const char* fmt, ...)
 }
 void log_filtered_trace(uint64_t addr, unsigned size, bool is_store);
 
+#if 0
 static inline void memtrace_ld(uint64_t addr, unsigned size)
 {
     memtrace(addr,size,false);
@@ -40,6 +41,7 @@ static inline void memtrace_st(uint64_t addr, unsigned size)
 {
     memtrace(addr,size,true);
 }
+#endif
 
 static inline void memtrace_mark_location(void)
 {
