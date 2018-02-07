@@ -65,7 +65,7 @@ void log_filtered_trace(uint64_t addr, unsigned size, bool is_store)
     if(!memtrace_enable || !memtrace_file)
         return;
 
-    if(addr - memtrace_ram_base < memtrace_region_start || addr - memtrace_ram_base >= memtrace_region_end)
+    if(addr < memtrace_region_start || addr >= memtrace_region_end)
         return;
 
     if(is_store) {
