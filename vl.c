@@ -4083,6 +4083,7 @@ int main(int argc, char **argv, char **envp)
                     fprintf(stderr, "File not exist (memtrace)\n");
                     exit(1);
                   }
+                  setvbuf(memtrace_file, NULL, _IOLBF, 0);
                   const char* region = qemu_opt_get(opts, "region");
                   memtrace_set_region( region );
                 }
