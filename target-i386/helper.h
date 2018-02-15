@@ -101,6 +101,7 @@ DEF_HELPER_0(mark_location, void)
 DEF_HELPER_0(trace_start, void)
 DEF_HELPER_0(trace_end, void)
 DEF_HELPER_0(mark_location2, void)
+DEF_HELPER_0(mark_location3, void)
 
 
 DEF_HELPER_3(svm_check_intercept_param, void, env, i32, i64)

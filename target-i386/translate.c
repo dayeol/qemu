@@ -7119,32 +7119,38 @@ static target_ulong disas_insn(CPUX86State *env, DisasContext *s,
             //UCB: special trace function
             gen_helper_mark_location();
             gen_nop_modrm(env, s, modrm);
-
-            // Flush TLB
-            // X86CPU *cpu = x86_env_get_cpu(env);
-            // CPUState *cs = CPU(cpu);
-            // tlb_flush(cs, 1);
-
             break;
         }
-				if(modrm == 0x12)
-				{
-						gen_helper_trace_start();
-						gen_nop_modrm(env, s, modrm);
-						break;
-				}
-				if(modrm == 0x13)
-				{
-						gen_helper_trace_end();
-						gen_nop_modrm(env, s, modrm);
-						break;
-				}
-				if(modrm == 0x10)
-				{   
+        if(modrm == 0x12)
+        {
+            // Flush TLB
+            X86CPU *cpu = x86_env_get_cpu(env);
+            CPUState *cs = CPU(cpu);
+            tlb_flush(cs, 1);
+
+            gen_helper_trace_start();
+            gen_nop_modrm(env, s, modrm);
+            break;
+        }
+        if(modrm == 0x13)
+        {
+            gen_helper_trace_end();
+            gen_nop_modrm(env, s, modrm);
+            break;
+        }
+        if(modrm == 0x10)
+        {
             gen_helper_mark_location2();
             gen_nop_modrm(env, s, modrm);
-						break;
-				}
+            break;
+        }
+        if(modrm == 0x09)
+        {
+            gen_helper_mark_location3();
+            gen_nop_modrm(env, s, modrm);
+            break;
+        }
+
 
         switch (modrm) {
             CASE_MODRM_MEM_OP(0): /* sgdt */

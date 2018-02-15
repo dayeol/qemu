@@ -45,6 +45,12 @@ void helper_mark_location2(void)
 	memtrace_mark_location2();
 }
 
+void helper_mark_location3(void)
+{
+	memtrace_mark_location3();
+}
+
+
 void helper_outb(CPUX86State *env, uint32_t port, uint32_t data)
 {
 #ifdef CONFIG_USER_ONLY
