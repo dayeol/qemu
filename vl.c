@@ -24,6 +24,7 @@
 #include "qemu/osdep.h"
 #include "qemu/cutils.h"
 #include "qemu/help_option.h"
+#include "cachesim.h"
 
 #ifdef CONFIG_SECCOMP
 #include "sysemu/seccomp.h"
@@ -564,7 +565,10 @@ static QemuOptsList qemu_cachesim_opts = {
         }, {
             .name = "l3",
             .type = QEMU_OPT_STRING,
-        },
+        }, {
+						.name = "file",
+						.type = QEMU_OPT_STRING,
+				},
         { /* end of list */ }
     }
 };
@@ -1982,6 +1986,8 @@ static void main_loop(void)
         dev_time += profile_getclock() - ti;
 #endif
     } while (!main_loop_should_exit());
+		
+		cachesim_destroy();
 }
 
 static void version(void)
@@ -4105,8 +4111,9 @@ int main(int argc, char **argv, char **envp)
                 const char* l3_opt = qemu_opt_get(opts, "l3");
                 if(l3_opt != NULL)
                     init_cache_l3(l3_opt);
-
-                init_cachesim();
+								const char* cachesim_file = qemu_opt_get(opts, "file");
+								
+                init_cachesim(cachesim_file);
                 //const char* l1_opt = qemu_opt_get(opts, "l1");
                 //cache_l1i = new icache_sim_t(l1_opt); 
                 

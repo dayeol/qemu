@@ -9,6 +9,7 @@
 #include <cstdarg>
 
 bool cachesim_enable = false;
+FILE* cachesim_file = NULL;
 icache_sim_t* cache_l1i = NULL;
 dcache_sim_t* cache_l1d = NULL;
 cache_sim_t* cache_l2 = NULL;
@@ -66,24 +67,32 @@ void cachesim_destroy()
         delete cache_l3;
 }
 
-void init_cachesim()
+void init_cachesim(const char* filename)
 {
     cachesim_enable = true;
     register_memtracer(&*cache_l1i);
     register_memtracer(&*cache_l1d);
+		if(filename != NULL) {
+			cachesim_file = fopen(filename, "w");
+		}	else {
+			cachesim_file = stdout;
+		}
 
     if(cache_l3)
     {
+				fprintf(cachesim_file, "L3 misses will be traced\n");
         cache_l3->enable_trace_miss();
         return;
     }
     if(cache_l2)
     {
+				fprintf(cachesim_file, "L2 misses will be traced\n");
         cache_l2->enable_trace_miss();
         return;
     }
     if(cache_l1i && cache_l1d)
     {
+				fprintf(cachesim_file, "L1 misses will be traced\n");
         cache_l1i->enable_trace_miss();
         cache_l1d->enable_trace_miss();
     }
@@ -179,6 +188,17 @@ void cache_sim_t::print_stats()
 
   float mr = 100.0f*(read_misses+write_misses)/(read_accesses+write_accesses);
 
+	fprintf(cachesim_file, "======== %s ========\n", name.c_str());
+	fprintf(cachesim_file, "Bytes Read: %lu\n", bytes_read);
+	fprintf(cachesim_file, "Bytes Written: %lu\n", bytes_written);
+	fprintf(cachesim_file, "Read Accesses: %lu\n", read_accesses);
+	fprintf(cachesim_file, "Write Accesses: %lu\n", write_accesses);
+	fprintf(cachesim_file, "Read Misses: %lu\n", read_misses);
+	fprintf(cachesim_file, "Write Misses: %lu\n", write_misses);
+	fprintf(cachesim_file, "Writebacks: %lu\n", writebacks);
+	fprintf(cachesim_file, "Miss Rate: %.3f\n", mr);
+	
+	/*
   std::cout << std::setprecision(3) << std::fixed;
   std::cout << name << " ";
   std::cout << "Bytes Read:            " << bytes_read << std::endl;
@@ -196,6 +216,7 @@ void cache_sim_t::print_stats()
   std::cout << "Writebacks:            " << writebacks << std::endl;
   std::cout << name << " ";
   std::cout << "Miss Rate:             " << mr << '%' << std::endl;
+	*/
 }
 
 uint64_t* cache_sim_t::check_tag(uint64_t addr)
@@ -234,7 +255,7 @@ void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
   /* cache miss occurs */
   if(trace_miss)
   {
-      cache_miss_callback(addr, bytes, store);
+      cache_miss_callback(addr & ~(linesz-1), linesz, store);
   }
 
   store ? write_misses++ : read_misses++;

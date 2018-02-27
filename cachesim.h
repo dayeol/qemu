@@ -141,7 +141,7 @@ extern "C" {
     void cachesim_ld(uint64_t addr, size_t bytes);
     void cachesim_st(uint64_t addr, size_t bytes);
     void cachesim_fc(uint64_t addr, size_t bytes);
-    void init_cachesim(void);
+    void init_cachesim(const char* file);
     void cachesim_destroy(void);
 #ifdef __cplusplus
 }
