@@ -238,3 +238,4 @@ DEF_HELPER_3(rcrq, tl, env, tl, tl)
 
 DEF_HELPER_3(memtrace_ld, void, env, i64, i32)
 DEF_HELPER_3(memtrace_st, void, env, i64, i32)
+DEF_HELPER_3(memtrace_fc, void, env, i64, i32)

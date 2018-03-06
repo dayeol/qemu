@@ -539,6 +539,10 @@ static QemuOptsList qemu_memtrace_opts = {
             .name = "enable",
             .type = QEMU_OPT_BOOL,
         }, {
+            .name = "icache",
+            .type = QEMU_OPT_BOOL,
+            .help = "Trace I-cache access",
+        }, {
             .name = "region",
             .type = QEMU_OPT_STRING,
             .help = "Filters out any address outside of this range if set",
@@ -4082,6 +4086,7 @@ int main(int argc, char **argv, char **envp)
                                                 optarg, false);
                 if (opts != NULL) {
                   memtrace_enable = qemu_opt_get_bool(opts, "enable", true);
+                  memtrace_icache = qemu_opt_get_bool(opts, "icache", false);
                   const char* filename = qemu_opt_get(opts, "file");
                   memtrace_file = fopen(filename, "w"); 
                   if(!memtrace_file)

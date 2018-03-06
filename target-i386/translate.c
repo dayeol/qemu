@@ -31,6 +31,7 @@
 #include "exec/log.h"
 
 #include "trace.h"
+#include "memtrace.h"
 
 #define PREFIX_REPZ   0x01
 #define PREFIX_REPNZ  0x02
@@ -8261,6 +8262,7 @@ void gen_intermediate_code(CPUX86State *env, TranslationBlock *tb)
     CPUState *cs = CPU(cpu);
     DisasContext dc1, *dc = &dc1;
     target_ulong pc_ptr;
+    target_ulong last_pc_ptr;
     uint64_t flags;
     target_ulong pc_start;
     target_ulong cs_base;
@@ -8352,6 +8354,7 @@ void gen_intermediate_code(CPUX86State *env, TranslationBlock *tb)
 
     gen_tb_start(tb);
     for(;;) {
+        last_pc_ptr = pc_ptr;
         tcg_gen_insn_start(pc_ptr, dc->cc_op);
         num_insns++;
 
@@ -8372,6 +8375,10 @@ void gen_intermediate_code(CPUX86State *env, TranslationBlock *tb)
         }
 
         pc_ptr = disas_insn(env, dc, pc_ptr);
+        if (memtrace_icache)
+            gen_helper_memtrace_fc(cpu_env, tcg_const_i64(last_pc_ptr),
+                                   tcg_const_i32(pc_ptr - last_pc_ptr));
+
         /* stop translation if indicated */
         if (dc->is_jmp)
             break;

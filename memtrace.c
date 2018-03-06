@@ -6,8 +6,15 @@
 
 #include <string.h>
 
+enum access_type {
+  LOAD,
+  STORE,
+  FETCH,
+};
+
 bool memtrace_is_started = false; /* if this is false, do not simulate cache, nor trace mem access */
 bool memtrace_enable = false; /* is trace is enabled? */
+bool memtrace_icache = false; /* tracing icache access? (will affect L2 and LLC) */
 FILE* memtrace_file = NULL; /* trace log file */
 uint64_t memtrace_region_start=0; /* filter start (physical addr) */
 uint64_t memtrace_region_end=(uint64_t)-1; /* filter end (physical addr) */
@@ -77,7 +84,7 @@ void log_filtered_trace(uint64_t addr, unsigned size, bool is_store)
 }
 
 static void memtrace(CPUX86State *env, uint64_t vaddr, uint32_t size,
-                     bool is_store)
+                     enum access_type type)
 {
     CPUState *cs = CPU(x86_env_get_cpu(env));
     uint64_t paddr;
@@ -86,8 +93,8 @@ static void memtrace(CPUX86State *env, uint64_t vaddr, uint32_t size,
         return;
 
     if((size-1)&vaddr && (vaddr&0xfff)+size >= 0x1000) {
-        memtrace(env, vaddr,          size/2, is_store);
-        memtrace(env, vaddr + size/2, size/2, is_store);
+        memtrace(env, vaddr,          size/2, type);
+        memtrace(env, vaddr + size/2, size/2, type);
     }
 
     paddr = cpu_get_phys_page_debug(cs, (vaddr&~(0x1000-1))) + (vaddr&(0x1000-1));
@@ -95,23 +102,28 @@ static void memtrace(CPUX86State *env, uint64_t vaddr, uint32_t size,
     /* if cache exists, trace last-level cache miss instead */
     if(cachesim_enable)
     {
-        if(is_store)
-            cachesim_st(paddr, size);
-        else
-            cachesim_ld(paddr, size);
-        return;
+        switch (type) {
+            case STORE: cachesim_st(paddr, size); break;
+            case LOAD:  cachesim_ld(paddr, size); break;
+            case FETCH: cachesim_fc(paddr, size); break;
+        }
     }
 
-    log_filtered_trace(paddr, size, is_store);
+    log_filtered_trace(paddr, size, type == STORE);
     return;
 }
 
 void helper_memtrace_ld(CPUX86State *env, target_ulong vaddr, uint32_t size)
 {
-    memtrace(env, vaddr, size, false);
+    memtrace(env, vaddr, size, LOAD);
 }
 
 void helper_memtrace_st(CPUX86State *env, target_ulong vaddr, uint32_t size)
 {
-    memtrace(env, vaddr, size, true);
+    memtrace(env, vaddr, size, STORE);
+}
+
+void helper_memtrace_fc(CPUX86State *env, target_ulong vaddr, uint32_t size)
+{
+    memtrace(env, vaddr, size, FETCH);
 }

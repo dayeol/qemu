@@ -3742,7 +3742,7 @@ DEFHEADING()
 DEFHEADING(Memory tracing option:)
 
 DEF("memtrace", HAS_ARG, QEMU_OPTION_memtrace,
-    "-memtrace [enable=[on|off][,region=<start>:<end>][,file=<file>]\n"
+    "-memtrace [enable=[on|off][,icache=[on|off]][,region=<start>:<end>][,file=<file>]\n"
     "                Physical memory trace.\n",
     QEMU_ARCH_I386)
 

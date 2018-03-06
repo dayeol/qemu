@@ -12,6 +12,7 @@
 extern bool memtrace_is_started;
 extern FILE* memtrace_file;
 extern bool memtrace_enable;
+extern bool memtrace_icache;
 extern uint64_t memtrace_region_start;
 extern uint64_t memtrace_region_end;
 extern void (*cache_miss_callback)(uint64_t, unsigned, bool);
