@@ -107,6 +107,7 @@ static void memtrace(CPUX86State *env, uint64_t vaddr, uint32_t size,
             case LOAD:  cachesim_ld(paddr, size); break;
             case FETCH: cachesim_fc(paddr, size); break;
         }
+				return;
     }
 
     log_filtered_trace(paddr, size, type == STORE);
