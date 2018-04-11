@@ -76,10 +76,10 @@ void log_filtered_trace(uint64_t addr, unsigned size, bool is_store)
         return;
 
     if(is_store) {
-        memtrace_vprintf("S %#"PRIx64" size %u \n", addr, size);
+        memtrace_vprintf("S %#"PRIx64" size %u\n", addr, size);
     }
     else {
-        memtrace_vprintf("L %#"PRIx64" size %u \n", addr, size);
+        memtrace_vprintf("L %#"PRIx64" size %u\n", addr, size);
     }
 }
 
@@ -107,7 +107,7 @@ static void memtrace(CPUX86State *env, uint64_t vaddr, uint32_t size,
             case LOAD:  cachesim_ld(paddr, size); break;
             case FETCH: cachesim_fc(paddr, size); break;
         }
-				return;
+        return;
     }
 
     log_filtered_trace(paddr, size, type == STORE);

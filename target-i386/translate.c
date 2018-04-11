@@ -92,13 +92,13 @@ do {                                                                \
 #define tcg_gen_qsim_st_tl(data, addr, idx, mop)                \
 do {                                                            \
     tcg_gen_qemu_st_tl(data, addr, idx, mop);                   \
-    gen_helper_memtrace_st(cpu_env, addr, tcg_const_i32(1 << (idx & 3))); \
+    gen_helper_memtrace_st(cpu_env, addr, tcg_const_i32(1 << ((mop) & MO_SIZE))); \
 } while (0)
 
 #define tcg_gen_qsim_ld_tl(data, addr, idx, mop)                \
 do {                                                            \
     tcg_gen_qemu_ld_tl(data, addr, idx, mop);                   \
-    gen_helper_memtrace_ld(cpu_env, addr, tcg_const_i32(1 << (idx & 3))); \
+    gen_helper_memtrace_ld(cpu_env, addr, tcg_const_i32(1 << ((mop) & MO_SIZE))); \
 } while (0)
 
 #define tcg_gen_qsim_ld_i32(dst, addr, idx, mop) \
