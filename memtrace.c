@@ -14,7 +14,7 @@ enum access_type {
 
 bool memtrace_is_started = false; /* if this is false, do not simulate cache, nor trace mem access */
 bool memtrace_enable = false; /* is trace is enabled? */
-bool memtrace_icache = false; /* tracing icache access? (will affect L2 and LLC) */
+bool memtrace_code = false; /* tracing code access? (will affect L2 and LLC) */
 FILE* memtrace_file = NULL; /* trace log file */
 uint64_t memtrace_region_start=0; /* filter start (physical addr) */
 uint64_t memtrace_region_end=(uint64_t)-1; /* filter end (physical addr) */

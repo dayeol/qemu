@@ -8375,7 +8375,7 @@ void gen_intermediate_code(CPUX86State *env, TranslationBlock *tb)
         }
 
         pc_ptr = disas_insn(env, dc, pc_ptr);
-        if (memtrace_icache)
+        if (memtrace_code)
             gen_helper_memtrace_fc(cpu_env, tcg_const_i64(last_pc_ptr),
                                    tcg_const_i32(pc_ptr - last_pc_ptr));
 
