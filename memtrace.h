@@ -15,7 +15,7 @@ extern bool memtrace_enable;
 extern bool memtrace_code;
 extern uint64_t memtrace_region_start;
 extern uint64_t memtrace_region_end;
-extern void (*cache_miss_callback)(uint64_t, unsigned, bool);
+extern void (*cache_miss_callback)(uint64_t, uint64_t, unsigned, bool);
 
 void memtrace_set_region(const char* region);
 void memtrace_set_ram_base(uint8_t* addr,uint64_t size);
@@ -30,7 +30,7 @@ static inline void memtrace_vprintf(const char* fmt, ...)
         va_end(ap);
     }
 }
-void log_filtered_trace(uint64_t addr, unsigned size, bool is_store);
+void log_filtered_trace(uint64_t vaddr, uint64_t paddr, unsigned size, bool is_store);
 
 #if 0
 static inline void memtrace_ld(uint64_t addr, unsigned size)

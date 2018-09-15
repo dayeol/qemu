@@ -14,7 +14,7 @@ icache_sim_t* cache_l1i = NULL;
 dcache_sim_t* cache_l1d = NULL;
 cache_sim_t* cache_l2 = NULL;
 cache_sim_t* cache_l3 = NULL;
-void (*cache_miss_callback)(uint64_t, unsigned, bool);
+void (*cache_miss_callback)(uint64_t, uint64_t, unsigned, bool);
 
 static memtracer_list_t tracer;
 
@@ -98,17 +98,17 @@ void init_cachesim(const char* filename)
     }
 }
 
-void cachesim_ld(uint64_t addr, size_t bytes)
+void cachesim_ld(uint64_t vaddr, uint64_t paddr, size_t bytes)
 {
-    tracer.trace(addr, bytes, LOAD);
+    tracer.trace(vaddr, paddr, bytes, LOAD);
 }
-void cachesim_st(uint64_t addr, size_t bytes)
+void cachesim_st(uint64_t vaddr, uint64_t paddr, size_t bytes)
 {
-    tracer.trace(addr, bytes, STORE);
+    tracer.trace(vaddr, paddr, bytes, STORE);
 }
-void cachesim_fc(uint64_t addr, size_t bytes)
+void cachesim_fc(uint64_t vaddr, uint64_t paddr, size_t bytes)
 {
-    tracer.trace(addr, bytes, FETCH);
+    tracer.trace(vaddr, paddr, bytes, FETCH);
 }
 
 cache_sim_t::cache_sim_t(size_t _sets, size_t _ways, size_t _linesz, const char* _name)
@@ -154,6 +154,7 @@ void cache_sim_t::init()
     idx_shift++;
 
   tags = new uint64_t[sets*ways]();
+  srcs = new uint64_t[sets*ways]();
   read_accesses = 0;
   read_misses = 0;
   bytes_read = 0;
@@ -172,13 +173,16 @@ cache_sim_t::cache_sim_t(const cache_sim_t& rhs)
    idx_shift(rhs.idx_shift), name(rhs.name)
 {
   tags = new uint64_t[sets*ways];
+  srcs = new uint64_t[sets*ways];
   memcpy(tags, rhs.tags, sets*ways*sizeof(uint64_t));
+  memcpy(srcs, rhs.srcs, sets*ways*sizeof(uint64_t));
 }
 
 cache_sim_t::~cache_sim_t()
 {
   print_stats();
   delete [] tags;
+  delete [] srcs;
 }
 
 void cache_sim_t::print_stats()
@@ -231,21 +235,23 @@ uint64_t* cache_sim_t::check_tag(uint64_t addr)
   return NULL;
 }
 
-uint64_t cache_sim_t::victimize(uint64_t addr)
+uint64_t cache_sim_t::victimize(uint64_t addr, uint64_t src, uint64_t &victim_src)
 {
   size_t idx = (addr >> idx_shift) & (sets-1);
   size_t way = lfsr.next() % ways;
   uint64_t victim = tags[idx*ways + way];
+  victim_src = srcs[idx*ways + way];
   tags[idx*ways + way] = (addr >> idx_shift) | VALID;
+  srcs[idx*ways + way] = src;
   return victim;
 }
 
-void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
+void cache_sim_t::access(uint64_t vaddr, uint64_t paddr, size_t bytes, bool store)
 {
   store ? write_accesses++ : read_accesses++;
   (store ? bytes_written : bytes_read) += bytes;
 
-  uint64_t* hit_way = check_tag(addr);
+  uint64_t* hit_way = check_tag(paddr);
   if (likely(hit_way != NULL))
   {
     if (store)
@@ -255,26 +261,27 @@ void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
   /* cache miss occurs */
   if(trace_miss)
   {
-      cache_miss_callback(addr & ~(linesz-1), linesz, store);
+      cache_miss_callback(vaddr & ~(linesz-1), paddr & ~(linesz-1), linesz, store);
   }
 
   store ? write_misses++ : read_misses++;
 
-  uint64_t victim = victimize(addr);
+  uint64_t victim_vaddr;
+  uint64_t victim = victimize(paddr, vaddr & ~(linesz-1), victim_vaddr);
 
   if ((victim & (VALID | DIRTY)) == (VALID | DIRTY))
   {
     uint64_t dirty_addr = (victim & ~(VALID | DIRTY)) << idx_shift;
     if (miss_handler)
-      miss_handler->access(dirty_addr, linesz, true);
+      miss_handler->access(victim_vaddr, dirty_addr, linesz, true);
     writebacks++;
   }
 
   if (miss_handler)
-    miss_handler->access(addr & ~(linesz-1), linesz, false);
+    miss_handler->access(vaddr & ~(linesz-1), paddr & ~(linesz-1), linesz, false);
 
   if (store)
-    *check_tag(addr) |= DIRTY;
+    *check_tag(paddr) |= DIRTY;
 }
 
 fa_cache_sim_t::fa_cache_sim_t(size_t ways, size_t linesz, const char* name)

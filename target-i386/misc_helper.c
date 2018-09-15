@@ -27,17 +27,19 @@
 
 void helper_mark_location(void)
 {
-    memtrace_mark_location();
+	memtrace_mark_location();
 }
 
 void helper_trace_start(void)
 {
-	memtrace_is_started = true;	
+	memtrace_is_started = true;
+	smp_wmb();
 }
 
 void helper_trace_end(void)
 {
-	memtrace_is_started = false;	
+	memtrace_is_started = false;
+	smp_wmb();
 }
 
 void helper_mark_location2(void)

@@ -21,9 +21,9 @@ uint64_t memtrace_region_end=(uint64_t)-1; /* filter end (physical addr) */
 uint64_t memtrace_ram_base = 0; /* host virtual address of guest DRAM */
 
 /* this is the callback for cache sim */
-static void cache_miss_trace(uint64_t addr, unsigned size, bool is_store)
+static void cache_miss_trace(uint64_t vaddr, uint64_t paddr, unsigned size, bool is_store)
 {
-    log_filtered_trace(addr, size, is_store);
+    log_filtered_trace(vaddr, paddr, size, is_store);
 }
 
 void memtrace_set_region(const char* region){
@@ -58,28 +58,31 @@ exit_error:
     exit(1);
 } 
 
-void memtrace_set_ram_base(uint8_t* addr,uint64_t size)
+void memtrace_set_ram_base(uint8_t *paddr, uint64_t size)
 {
     /* only if this is the first call, because the first one is for the system memory. */
     if(memtrace_ram_base == 0 && memtrace_file) {
-        memtrace_ram_base = (uint64_t) addr;
-        fprintf(memtrace_file, "RAM base: %" PRIx64 ", size:%"PRIx64"\n", memtrace_ram_base, size);
+        memtrace_ram_base = (uint64_t) paddr;
+        fprintf(memtrace_file, "RAM base: %#"PRIx64", size:%#"PRIx64"\n",
+                memtrace_ram_base, size);
     }
 }
 
-void log_filtered_trace(uint64_t addr, unsigned size, bool is_store)
+void log_filtered_trace(uint64_t vaddr, uint64_t paddr, unsigned size, bool is_store)
 {
     if(!memtrace_enable || !memtrace_file)
         return;
 
-    if(addr < memtrace_region_start || addr >= memtrace_region_end)
+    if(paddr < memtrace_region_start || paddr >= memtrace_region_end)
         return;
 
-    if(is_store) {
-        memtrace_vprintf("S %#"PRIx64" size %u\n", addr, size);
+    if(vaddr != 0) {
+        memtrace_vprintf("%c %#"PRIx64" size %u => %#"PRIx64"\n",
+                         is_store ? 'S' : 'L', paddr, size, vaddr);
     }
     else {
-        memtrace_vprintf("L %#"PRIx64" size %u\n", addr, size);
+        memtrace_vprintf("%c %#"PRIx64" size %u\n",
+                         is_store ? 'S' : 'L', paddr, size);
     }
 }
 
@@ -95,6 +98,7 @@ static void memtrace(CPUX86State *env, uint64_t vaddr, uint32_t size,
     if((size-1)&vaddr && (vaddr&0xfff)+size >= 0x1000) {
         memtrace(env, vaddr,          size/2, type);
         memtrace(env, vaddr + size/2, size/2, type);
+        return;
     }
 
     paddr = cpu_get_phys_page_debug(cs, (vaddr&~(0x1000-1))) + (vaddr&(0x1000-1));
@@ -103,14 +107,14 @@ static void memtrace(CPUX86State *env, uint64_t vaddr, uint32_t size,
     if(cachesim_enable)
     {
         switch (type) {
-            case STORE: cachesim_st(paddr, size); break;
-            case LOAD:  cachesim_ld(paddr, size); break;
-            case FETCH: cachesim_fc(paddr, size); break;
+            case STORE: cachesim_st(vaddr, paddr, size); break;
+            case LOAD:  cachesim_ld(vaddr, paddr, size); break;
+            case FETCH: cachesim_fc(vaddr, paddr, size); break;
         }
         return;
     }
 
-    log_filtered_trace(paddr, size, type == STORE);
+    log_filtered_trace(vaddr, paddr, size, type == STORE);
     return;
 }
 

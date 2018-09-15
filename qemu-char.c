@@ -41,6 +41,7 @@
 #include "io/channel-tls.h"
 #include "sysemu/replay.h"
 #include "cachesim.h"
+#include "memtrace.h"
 #include <zlib.h>
 
 #ifndef _WIN32
@@ -653,6 +654,17 @@ static int mux_proc_byte(CharDriverState *chr, MuxDriver *d, int ch)
             d->timestamps_start = -1;
             d->linestart = 0;
             break;
+        case 'r':
+            {
+                 const char *term = memtrace_is_started ?
+                         "Memory trace stopped\n\r" : "Memory trace started";
+                 /* FIXME must print out somewhere else. */
+                 memtrace_is_started = !memtrace_is_started;
+                 smp_wmb();
+
+                 qemu_chr_fe_write(chr, (uint8_t *)term, strlen(term));
+                 break;
+            }
         }
     } else if (ch == term_escape_char) {
         d->term_got_escape = 1;

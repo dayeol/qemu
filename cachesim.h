@@ -31,7 +31,7 @@ class cache_sim_t
   cache_sim_t(const cache_sim_t& rhs);
   virtual ~cache_sim_t();
 
-  void access(uint64_t addr, size_t bytes, bool store);
+  void access(uint64_t vaddr, uint64_t paddr, size_t bytes, bool store);
   void print_stats();
   void set_miss_handler(cache_sim_t* mh) { miss_handler = mh; }
 
@@ -44,7 +44,7 @@ class cache_sim_t
   static const uint64_t DIRTY = 1ULL << 62;
 
   virtual uint64_t* check_tag(uint64_t addr);
-  virtual uint64_t victimize(uint64_t addr);
+  virtual uint64_t victimize(uint64_t addr, uint64_t src, uint64_t &victim_src);
 
   lfsr_t lfsr;
   cache_sim_t* miss_handler;
@@ -55,7 +55,8 @@ class cache_sim_t
   size_t idx_shift;
 
   uint64_t* tags;
-  
+  uint64_t* srcs;
+
   uint64_t read_accesses;
   uint64_t read_misses;
   uint64_t bytes_read;
@@ -109,9 +110,9 @@ class icache_sim_t : public cache_memtracer_t
   {
     return type == FETCH;
   }
-  void trace(uint64_t addr, size_t bytes, access_type type)
+  void trace(uint64_t vaddr, uint64_t paddr, size_t bytes, access_type type)
   {
-    if (type == FETCH) cache->access(addr, bytes, false);
+    if (type == FETCH) cache->access(vaddr, paddr, bytes, false);
   }
 };
 
@@ -124,9 +125,9 @@ class dcache_sim_t : public cache_memtracer_t
   {
     return type == LOAD || type == STORE;
   }
-  void trace(uint64_t addr, size_t bytes, access_type type)
+  void trace(uint64_t vaddr, uint64_t paddr, size_t bytes, access_type type)
   {
-    if (type == LOAD || type == STORE) cache->access(addr, bytes, type == STORE);
+    if (type == LOAD || type == STORE) cache->access(vaddr, paddr, bytes, type == STORE);
   }
 };
 #endif /* ifdef __cplusplus */
@@ -138,9 +139,9 @@ extern "C" {
     void init_cache_l1(const char* optstr);
     void init_cache_l2(const char* optstr);
     void init_cache_l3(const char* optstr);
-    void cachesim_ld(uint64_t addr, size_t bytes);
-    void cachesim_st(uint64_t addr, size_t bytes);
-    void cachesim_fc(uint64_t addr, size_t bytes);
+    void cachesim_ld(uint64_t vaddr, uint64_t paddr, size_t bytes);
+    void cachesim_st(uint64_t vaddr, uint64_t paddr, size_t bytes);
+    void cachesim_fc(uint64_t vaddr, uint64_t paddr, size_t bytes);
     void init_cachesim(const char* file);
     void cachesim_destroy(void);
 #ifdef __cplusplus
