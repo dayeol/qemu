@@ -95,6 +95,9 @@ static void memtrace(CPUX86State *env, uint64_t vaddr, uint32_t size,
     if(!memtrace_is_started)
         return;
 
+    if(vaddr >= 0xffff800000000000)
+       return;
+
     if((size-1)&vaddr && (vaddr&0xfff)+size >= 0x1000) {
         memtrace(env, vaddr,          size/2, type);
         memtrace(env, vaddr + size/2, size/2, type);
